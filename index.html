@@ -819,6 +819,27 @@
   .holding .hold-bar::before { animation: holdFill 3s linear forwards; }
   @keyframes holdFill { to { width: 100%; } }
 
+  /* 잠깐 떴다 사라지는 알림 */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 20;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: rgba(20, 8, 8, 0.92);
+    border: 1px solid rgba(227, 36, 43, 0.5);
+    color: #ffd6d8;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+    transform: translateX(-50%);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+
   /* 움직임을 줄이도록 설정한 사람을 위한 배려 */
   @media (prefers-reduced-motion: reduce) {
     .title, .btn-base, .ball-hop, .jelly, .sprout, .foot, .shadow, .shake,
@@ -828,6 +849,9 @@
 </style>
 </head>
 <body>
+
+  <!-- 잠깐 떴다 사라지는 알림 -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <!-- ===== 첫 화면 오른쪽 위: 언어 선택 ===== -->
   <div class="lang-picker">
@@ -998,6 +1022,7 @@
         <div class="card-actions">
           <button id="infoPlay" class="small-btn" type="button" hidden></button>
           <button id="infoSound" class="small-btn" type="button" hidden></button>
+          <button id="infoShare" class="small-btn" type="button" hidden></button>
           <button id="infoEdit" class="small-btn" type="button"></button>
           <button id="infoDel" class="small-btn danger" type="button"></button>
           <button id="infoClose" class="small-btn" type="button"></button>
@@ -1238,6 +1263,21 @@
   };
   Object.keys(RULE_TEXT).forEach((code) => Object.assign(LANGS[code], RULE_TEXT[code]));
 
+  // 친구에게 캐릭터 보내기 문장 ({name} 자리에 캐릭터 이름이 들어가요)
+  const SHARE_TEXT = {
+    en: { share: '🔗 Send to a friend', copied: 'Link copied! Send it to your friend.', arrived: "Your friend's character \"{name}\" has arrived! Press the button to meet it.", remove: 'Remove' },
+    ko: { share: '🔗 친구에게 보내기', copied: '링크를 복사했어요. 친구에게 보내 주세요!', arrived: '친구의 캐릭터 「{name}」이(가) 도착했어요! 버튼을 누르면 만날 수 있어요.', remove: '내 화면에서 빼기' },
+    ja: { share: '🔗 友だちに送る', copied: 'リンクをコピーしました。友だちに送ってね！', arrived: '友だちのキャラ「{name}」が届きました！ボタンを押すと会えます。', remove: '画面から外す' },
+    zh: { share: '🔗 发给朋友', copied: '链接已复制，发给你的朋友吧！', arrived: '朋友的角色「{name}」到了！按下按钮就能见到它。', remove: '从我的画面移除' },
+    es: { share: '🔗 Enviar a un amigo', copied: '¡Enlace copiado! Envíaselo a tu amigo.', arrived: '¡Ha llegado el personaje de tu amigo "{name}"! Pulsa el botón para conocerlo.', remove: 'Quitar' },
+    fr: { share: '🔗 Envoyer à un ami', copied: 'Lien copié ! Envoyez-le à votre ami.', arrived: "Le personnage de votre ami « {name} » est arrivé ! Appuyez sur le bouton pour le rencontrer.", remove: 'Retirer' },
+    de: { share: '🔗 An Freund senden', copied: 'Link kopiert! Schick ihn deinem Freund.', arrived: 'Die Figur deines Freundes „{name}“ ist da! Drück den Knopf, um sie zu treffen.', remove: 'Entfernen' },
+    ru: { share: '🔗 Отправить другу', copied: 'Ссылка скопирована! Отправьте её другу.', arrived: 'Пришёл персонаж вашего друга «{name}»! Нажмите кнопку, чтобы встретиться.', remove: 'Убрать' },
+    vi: { share: '🔗 Gửi cho bạn bè', copied: 'Đã sao chép liên kết! Hãy gửi cho bạn bè.', arrived: 'Nhân vật "{name}" của bạn bè đã đến! Bấm nút để gặp nhé.', remove: 'Gỡ khỏi màn hình' },
+    ar: { share: '🔗 أرسل إلى صديق', copied: 'تم نسخ الرابط! أرسله إلى صديقك.', arrived: 'وصلت شخصية صديقك «{name}»! اضغط الزر لتلتقي بها.', remove: 'إزالة' }
+  };
+  Object.keys(SHARE_TEXT).forEach((code) => Object.assign(LANGS[code], SHARE_TEXT[code]));
+
   // ===== 2. 캐릭터 기본값 =====
   const DEFAULT_SIZE = 64;   // 처음 크기 (공은 56)
   const HOP_TIME = { slow: 1.1, normal: 0.8, fast: 0.5 };   // 한 번 튀는 데 걸리는 시간(초)
@@ -1266,6 +1306,7 @@
   const recBtn = $('recBtn'), playBtn = $('playBtn'), voiceClear = $('voiceClear');
   const voiceFile = $('voiceFile'), voiceMsg = $('voiceMsg');
   const infoSound = $('infoSound'), photoNote = $('photoNote');
+  const infoShare = $('infoShare'), toastEl = $('toast');
 
   // 이 브라우저(방문자)를 구분하는 이름표. 나중에 전체 서버에서 "내 캐릭터"를 알아보는 데 써요.
   let myId = null;
@@ -2094,7 +2135,12 @@
     infoImg.src = ch.img;
     infoName.textContent = ch.name;
     infoDesc.textContent = ch.desc || T().noDesc;
-    infoEdit.hidden = infoDel.hidden = !isMine(ch);
+    infoEdit.hidden = !isMine(ch);
+    infoShare.hidden = !isMine(ch);
+    // 친구가 보낸 캐릭터는 고칠 순 없지만, 내 화면에서 뺄 수는 있어요
+    infoDel.hidden = !(isMine(ch) || ch.guest);
+    infoDel.textContent = isMine(ch) ? T().del : T().remove;
+    infoShare.textContent = T().share;
     updateSoundButtons(ch);
     peopleDrop.hidden = true;
     infoPanel.hidden = false;
@@ -2135,6 +2181,111 @@
     renderPeople();
     closeInfo();
   });
+
+  // ===== 11-1. 친구에게 캐릭터 보내기 (데이터베이스 없이, 링크 안에 캐릭터를 담아요) =====
+  // 링크 = 사이트 주소 + "#c=" + 캐릭터 정보를 압축한 글자
+  // 링크가 너무 길어지지 않게 그림은 작게 줄이고, 목소리와 레이어는 빼요.
+  function toB64url(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function fromB64url(str) {
+    const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+  async function encodeShare(obj) {
+    const raw = new TextEncoder().encode(JSON.stringify(obj));
+    if (window.CompressionStream) {
+      const zipped = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+      return 'g' + toB64url(new Uint8Array(await new Response(zipped).arrayBuffer()));
+    }
+    return 'j' + toB64url(raw);
+  }
+  async function decodeShare(str) {
+    let bytes = fromB64url(str.slice(1));
+    if (str[0] === 'g') {
+      const unzipped = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      bytes = new Uint8Array(await new Response(unzipped).arrayBuffer());
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  // 그림을 긴 쪽 96px로 줄이기 (링크 길이를 줄이려고)
+  function shrinkImage(src) {
+    return new Promise((resolve) => {
+      loadImage(src, (img) => {
+        const k = Math.min(1, 96 / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * k));
+        c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        let url = c.toDataURL('image/webp', 0.75);
+        if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/png');
+        resolve(url);
+      });
+    });
+  }
+
+  let toastTimer = null;
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 4000);
+  }
+
+  infoShare.addEventListener('click', async () => {
+    const ch = myChars.find((c) => c.id === infoId);
+    if (!ch) return;
+    const code = await encodeShare({
+      n: ch.name, d: ch.desc || '', s: ch.size, h: ch.hop, r: ch.roll,
+      i: await shrinkImage(ch.img)
+    });
+    const url = location.href.split('#')[0] + '#c=' + code;
+    track('share-link');
+    // 휴대폰이면 카카오톡 등으로 바로 보내는 창이 뜨고, 아니면 링크를 복사해요
+    if (navigator.share) {
+      try { await navigator.share({ title: document.title, url }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast(T().copied);
+    } catch (e) {
+      window.prompt(T().copied, url);
+    }
+  });
+
+  // 친구가 보낸 링크로 들어왔을 때: 그 캐릭터를 내 세상에 손님으로 추가해요
+  async function receiveSharedCharacter() {
+    const m = location.hash.match(/^#c=([gj][A-Za-z0-9_-]+)$/);
+    if (!m) return;
+    history.replaceState(null, '', location.href.split('#')[0]); // 주소창 깔끔하게
+    let data;
+    try { data = await decodeShare(m[1]); } catch (e) { return; }
+    // 받은 내용 검사 (이상한 값이 들어와도 안전하게)
+    if (!data || typeof data.n !== 'string' || typeof data.i !== 'string' || !data.i.startsWith('data:image/')) return;
+    const id = 'f' + m[1].length.toString(36) + m[1].slice(-12);
+    if (!myChars.some((c) => c.id === id)) {
+      myChars.push({
+        id,
+        name: data.n.slice(0, 16),
+        desc: typeof data.d === 'string' ? data.d.slice(0, 120) : '',
+        img: data.i,
+        size: Math.min(120, Math.max(28, Number(data.s) || DEFAULT_SIZE)),
+        hop: HOP_TIME[data.h] ? data.h : 'normal',
+        roll: ROLL_TIME[data.r] ? data.r : 'normal',
+        owner: 'friend',
+        guest: true
+      });
+      saveChars();
+      renderCharacters();
+      renderPeople();
+    }
+    toast(T().arrived.replace('{name}', data.n.slice(0, 16)));
+  }
 
   // ===== 12. 누른 사람들 목록 (오른쪽 위 👥) =====
   function renderPeople() {
@@ -2181,6 +2332,8 @@
   loadChars();
   renderCharacters();
   renderPeople();
+  receiveSharedCharacter();
+  window.addEventListener('hashchange', receiveSharedCharacter);
 </script>
 </body>
 </html>
