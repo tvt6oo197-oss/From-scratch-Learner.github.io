@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- ============================================================
+     HTML = 웹페이지의 "뼈대" (무엇이 있는지)
+     CSS  = 웹페이지의 "옷"   (어떻게 보이는지)  → <style> 안
+     JS   = 웹페이지의 "근육" (어떻게 움직이는지) → <script> 안
+     이 파일 하나에 세 가지가 모두 들어 있어요.
+     ============================================================ -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Never press this button. Once pressed, it cannot be undone. Will you still press it?">
+<title>DO NOT PRESS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23e3242b'/></svg>">
+
+<!-- 구글 폰트: 어두운 화면용(Noto Serif KR), 밝은 화면용(Jua) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ===== 1. 기본 설정 ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: #0a0a0a; overflow: hidden; }
+  [hidden] { display: none !important; }
+
+  /* 화면들을 화면 전체에 겹쳐 놓아요 */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    text-align: center;
+    overflow-y: auto;
+  }
+
+  /* 칸을 좌우로 흔들어 "다시 해 주세요"를 알리는 효과 (여러 곳에서 씀) */
+  .shake { animation: shake 0.4s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* ===== 2. 첫 화면 오른쪽 위: 언어 선택 ===== */
+  .lang-picker {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 3;
+  }
+  .lang-picker select {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 8px 32px 8px 34px;
+    border: 1px solid rgba(227, 36, 43, 0.5);
+    border-radius: 999px;
+    /* 왼쪽엔 말풍선(언어) 아이콘, 오른쪽엔 ▼ 아이콘 (그림을 코드로 직접 그림) */
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e3242b' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M4 5h16v11H10l-5 4v-4H4z'/%3E%3Cpath d='M8 9.5h8M8 12.5h5'/%3E%3C/svg%3E") no-repeat 12px center / 16px,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e3242b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px,
+      rgba(10, 10, 10, 0.85);
+    color: #e3242b;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+  }
+  .lang-picker select:focus-visible { box-shadow: 0 0 0 3px rgba(227, 36, 43, 0.45); }
+  .lang-picker option { background: #0a0a0a; color: #e3242b; }
+
+  /* ===== 3. 어두운 화면 ===== */
+  #dark {
+    background: radial-gradient(ellipse at center, #1c0606 0%, #0a0a0a 70%);
+    color: #e3242b;
+    font-family: 'Noto Serif KR', serif;
+  }
+
+  .title {
+    font-size: clamp(36px, 11vw, 84px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    word-break: keep-all;
+    text-shadow: 0 0 24px rgba(227, 36, 43, 0.5);
+    animation: flicker 6s infinite;
+  }
+  /* 가끔 전등이 깜빡이듯 흔들리는 효과 */
+  @keyframes flicker {
+    0%, 92%, 94%, 97%, 100% { opacity: 1; }
+    93% { opacity: 0.55; }
+    96% { opacity: 0.8; }
+  }
+
+  .message {
+    max-width: 560px;
+    min-height: 7.5em;
+    margin: 12px 0 28px;
+    font-size: clamp(15px, 4vw, 19px);
+    line-height: 1.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 언어를 바꿀 때 글자가 부드럽게 사라졌다 나타나게 */
+  .fade { transition: opacity 0.3s ease; }
+  .fade.hide { opacity: 0; }
+
+  /* 커다란 빨간 버튼: 검은 받침 위에 올라가 있어요 */
+  .btn-base {
+    padding: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #2a2a2a, #0d0d0d);
+    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.08), 0 0 0 2px #1f0a0a;
+    animation: glow 2.4s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.08), 0 0 0 2px #1f0a0a, 0 0 0 0 rgba(227, 36, 43, 0.4); }
+    50%      { box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.08), 0 0 0 2px #1f0a0a, 0 0 46px 6px rgba(227, 36, 43, 0.35); }
+  }
+  .red-btn {
+    display: block;
+    width: clamp(130px, 40vw, 190px);
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff7a7a 0%, #e3242b 45%, #8f0d12 100%);
+    box-shadow: 0 10px 0 #5a0709, 0 14px 24px rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+    outline: none;
+  }
+  /* 누르는 순간 쑥 들어가요 */
+  .red-btn:active,
+  .red-btn.pressed { transform: translateY(8px); box-shadow: 0 2px 0 #5a0709, 0 4px 10px rgba(0, 0, 0, 0.6); }
+  .red-btn:focus-visible { box-shadow: 0 10px 0 #5a0709, 0 0 0 4px rgba(255, 255, 255, 0.5); }
+
+  /* ===== 4. "정말 누르시겠습니까?" 창 ===== */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .modal.open { opacity: 1; pointer-events: auto; }
+
+  .panel {
+    width: 100%;
+    max-width: 420px;
+    padding: 28px 22px 22px;
+    background: #120404;
+    border: 1px solid rgba(227, 36, 43, 0.6);
+    border-radius: 8px;
+    box-shadow: 0 0 40px rgba(227, 36, 43, 0.25);
+    color: #e3242b;
+    font-family: 'Noto Serif KR', serif;
+    text-align: center;
+    transform: scale(0.94);
+    transition: transform 0.35s ease;
+  }
+  .modal.open .panel { transform: scale(1); }
+
+  .ask { font-size: clamp(19px, 5.4vw, 24px); font-weight: 700; }
+
+  .actions { display: flex; gap: 10px; margin-top: 24px; }
+  .actions button {
+    flex: 1;
+    padding: 14px 10px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cancel-btn {
+    background: transparent;
+    color: rgba(227, 36, 43, 0.75);
+    border: 1px solid rgba(227, 36, 43, 0.35);
+  }
+  .confirm-btn {
+    background: #e3242b;
+    color: #0a0a0a;
+    border: 2px solid #e3242b;
+  }
+
+  /* ===== 5. 밝은 화면 ===== */
+  #bright {
+    background: linear-gradient(180deg, #fff6fb 0%, #fde2ef 55%, #ffe9c7 100%);
+    color: #ff5c8a;
+    font-family: 'Jua', sans-serif;
+    z-index: 10;
+    /* 처음엔 크기 0인 원으로 잘려 있어서 안 보여요 */
+    clip-path: circle(0% at var(--x, 50%) var(--y, 50%));
+    transition: clip-path 0.9s cubic-bezier(0.65, 0, 0.35, 1);
+    pointer-events: none;
+  }
+  /* 원이 화면 전체로 커져요 */
+  #bright.open {
+    clip-path: circle(150% at var(--x, 50%) var(--y, 50%));
+    pointer-events: auto;
+  }
+
+  /* 둥근 흰 버튼 (왼쪽 위 "<", 오른쪽 위 누른 사람들·서버) */
+  .round-btn {
+    height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 3px 0 #ffd1e0;
+    color: #ff5c8a;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .round-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #ffd1e0; }
+  .round-btn svg { width: 22px; height: 22px; }
+
+  .back-arrow {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 3;
+    padding: 0;
+    font-size: 24px;
+  }
+  .top-right {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* 누른 사람들 목록 (👥 버튼을 누르면 펼쳐짐) */
+  .people-drop {
+    position: absolute;
+    top: 68px;
+    right: 16px;
+    z-index: 4;
+    width: 190px;
+    max-height: 45vh;
+    overflow-y: auto;
+    padding: 12px 14px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 0 #ffd1e0;
+    text-align: start;
+  }
+  .people-drop p { font-size: 14px; color: #f28bb0; margin-bottom: 6px; }
+  .people-drop ul { list-style: none; }
+  .people-drop button {
+    width: 100%;
+    padding: 6px 4px;
+    border: none;
+    border-bottom: 2px dashed #ffe0ea;
+    background: none;
+    color: #ff5c8a;
+    font-family: inherit;
+    font-size: 15px;
+    text-align: start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  /* 글자·버튼들은 캐릭터보다 위에 보이되, 빈 공간은 캐릭터를 누를 수 있게 통과시켜요 */
+  .bright-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 56px 0 150px; /* 위: 버튼 자리 / 아래: 공과 캐릭터가 지나갈 자리 */
+    pointer-events: none;
+  }
+  #bright[data-stage="draw"] .bright-content { padding-bottom: 90px; }
+  .bright-content > * { pointer-events: auto; }
+
+  .thanks {
+    font-size: clamp(32px, 9vw, 60px);
+    text-shadow: 3px 3px 0 #ffd1e0;
+  }
+  #bright[data-stage="draw"] .thanks { font-size: clamp(26px, 7.5vw, 42px); }
+  #bright.open .thanks { animation: pop 0.6s 0.5s both; }
+  @keyframes pop {
+    0%   { transform: scale(0.3); opacity: 0; }
+    70%  { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+
+  /* 단계별로 보이는 부분 (그리기 → 이름 → 완성) */
+  .stage { display: none; flex-direction: column; align-items: center; }
+  #bright[data-stage="draw"] .stage-draw,
+  #bright[data-stage="name"] .stage-name { display: flex; }
+
+  .prompt {
+    margin: 10px 0 8px;
+    font-size: clamp(16px, 4.4vw, 20px);
+  }
+
+  /* 그림판 */
+  .canvas-wrap {
+    width: min(70vw, 260px);
+    aspect-ratio: 1;
+    background-color: #fff;
+    border: 3px dashed #ffc2d6;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  /* 격자: 그림에는 저장되지 않고 그릴 때만 보여요 */
+  .canvas-wrap.grid {
+    background-image:
+      linear-gradient(#ffe3ec 1px, transparent 1px),
+      linear-gradient(90deg, #ffe3ec 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  .canvas-wrap canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none; /* 그림 그릴 때 화면이 같이 움직이지 않게 */
+    cursor: crosshair;
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    max-width: 360px;
+    margin-top: 8px;
+  }
+  .swatch {
+    width: 30px; height: 30px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    cursor: pointer;
+  }
+  .tool {
+    width: 34px; height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    color: #ff5c8a;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .swatch.active, .tool.active, .color-pick.active { box-shadow: 0 0 0 3px #ff5c8a; }
+  .tool .dot { display: block; border-radius: 50%; background: #4a3426; }
+
+  .color-pick {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 30px; height: 30px;
+    padding: 0;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    cursor: pointer;
+  }
+  .color-pick::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-pick::-webkit-color-swatch { border: none; border-radius: 50%; opacity: 0; }
+  .color-pick::-moz-color-swatch { border: none; border-radius: 50%; opacity: 0; }
+
+  /* 레이어 줄 */
+  .layer-bar {
+    padding: 6px 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  .layer-bar .label { font-size: 14px; margin-inline-end: 2px; }
+  .layer-btn.off { opacity: 0.4; text-decoration: line-through; }
+  .wide-tool { width: auto; padding: 0 10px; font-size: 14px; gap: 4px; }
+
+  .img-bar { font-size: 14px; }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    cursor: pointer;
+  }
+  .check input { accent-color: #ff5c8a; }
+
+  .pill-btn {
+    margin-top: 12px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 999px;
+    background: #ff8fb1;
+    box-shadow: 0 4px 0 #f06c97;
+    color: #fff;
+    font-family: inherit;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .pill-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #f06c97; }
+
+  /* 이름 짓기 + 캐릭터 설정 */
+  .preview-box {
+    height: 128px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin: 12px 0 8px;
+  }
+  .preview { object-fit: contain; }
+
+  .opt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(84vw, 320px);
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+  .opt-row > span { flex: none; min-width: 72px; text-align: start; }
+  .opt-row input[type="range"] { flex: 1; accent-color: #ff5c8a; }
+  .seg { flex: 1; display: flex; gap: 6px; }
+  .seg button {
+    flex: 1;
+    padding: 7px 4px;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    color: #ff7aa2;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .seg button.active { background: #ff8fb1; color: #fff; box-shadow: 0 0 0 2px #ff8fb1; }
+
+  .name-input, .desc-input {
+    width: min(84vw, 320px);
+    margin-top: 4px;
+    padding: 12px 16px;
+    border: 3px solid #ffc2d6;
+    background: #fff;
+    color: #ff5c8a;
+    font-family: inherit;
+    font-size: 17px;
+    text-align: center;
+    outline: none;
+  }
+  .name-input { border-radius: 999px; }
+  .desc-input {
+    margin-top: 8px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.5;
+    resize: none;
+  }
+  .name-input:focus, .desc-input:focus { border-color: #ff8fb1; }
+  .name-input::placeholder, .desc-input::placeholder { color: #f4a9c3; }
+
+  /* 밝은 화면 위에 뜨는 창 (캐릭터 정보, 서버 선택) */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(255, 238, 245, 0.85);
+    backdrop-filter: blur(3px);
+  }
+  .card {
+    width: 100%;
+    max-width: 360px;
+    max-height: 78vh;
+    overflow-y: auto;
+    padding: 22px 18px 18px;
+    background: #fff;
+    border-radius: 22px;
+    box-shadow: 0 6px 0 #ffd1e0;
+  }
+  .card-title { font-size: 22px; margin-bottom: 12px; }
+  .info-img { max-width: 140px; max-height: 120px; object-fit: contain; margin: 4px auto 10px; display: block; }
+  .info-name { font-size: 24px; }
+  .info-desc {
+    margin-top: 8px;
+    color: #f28bb0;
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .card-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .small-btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 999px;
+    background: #ffe3ec;
+    color: #ff5c8a;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .small-btn.danger { background: #ff8fb1; color: #fff; }
+
+  .server-opt {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 16px;
+    background: #fff4f8;
+    box-shadow: 0 0 0 2px #ffe0ea;
+    color: #ff5c8a;
+    font-family: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .server-opt .ico { font-size: 22px; }
+  .server-opt .txt { flex: 1; }
+  .server-opt .name { display: block; font-size: 17px; }
+  .server-opt .sub { display: block; font-size: 12px; color: #e7a3bd; margin-top: 2px; }
+  .server-opt.active { box-shadow: 0 0 0 3px #ff8fb1; }
+  .server-opt:disabled { cursor: not-allowed; opacity: 0.55; }
+
+  /* ===== 6. 통통 튀는 공과 캐릭터 ===== */
+  .ground {
+    position: absolute;
+    left: 0; right: 0; bottom: 60px;
+    height: 3px;
+    background: #f7c6d8;
+    border-radius: 2px;
+  }
+
+  /* 공 전체가 왼쪽에서 오른쪽으로 굴러가요 */
+  .ball-track {
+    position: absolute;
+    left: 0;
+    bottom: 63px;
+    width: 56px;
+    pointer-events: none;
+    animation: roll 7s linear infinite;
+  }
+  @keyframes roll {
+    from { transform: translateX(-80px); }
+    to   { transform: translateX(calc(100vw + 80px)); }
+  }
+
+  /* 위아래로 통통 튀어요 */
+  .ball-hop { animation: hop 0.7s infinite; }
+  @keyframes hop {
+    0%, 100% { transform: translateY(0);      animation-timing-function: ease-out; }
+    50%      { transform: translateY(-110px); animation-timing-function: ease-in; }
+  }
+
+  /* 바닥에 닿을 때 살짝 찌그러져요 */
+  .ball {
+    position: relative;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff8dc 0 10%, #ffd166 30%, #ffb703 100%);
+    transform-origin: bottom center;
+    animation: squash 0.7s infinite;
+  }
+  @keyframes squash {
+    0%, 100% { transform: scale(1.18, 0.82); }
+    12%, 88% { transform: scale(1, 1); }
+  }
+
+  /* 공의 얼굴 */
+  .eye {
+    position: absolute;
+    top: 20px;
+    width: 6px; height: 8px;
+    background: #4a3426;
+    border-radius: 50%;
+  }
+  .eye.left  { left: 16px; }
+  .eye.right { right: 16px; }
+  .cheek {
+    position: absolute;
+    top: 30px;
+    width: 9px; height: 5px;
+    background: #ff8fb1;
+    border-radius: 50%;
+    opacity: 0.8;
+  }
+  .cheek.left  { left: 9px; }
+  .cheek.right { right: 9px; }
+  .mouth {
+    position: absolute;
+    top: 30px; left: 50%;
+    width: 10px; height: 6px;
+    margin-left: -5px;
+    border-bottom: 2px solid #4a3426;
+    border-radius: 0 0 10px 10px;
+  }
+
+  /* 그림자: 위로 높이 뜨면 작고 흐려져요 */
+  .shadow {
+    position: absolute;
+    left: 50%; bottom: -6px;
+    width: 40px; height: 8px;
+    margin-left: -20px;
+    background: #e9a8c0;
+    border-radius: 50%;
+    animation: shadow 0.7s infinite;
+  }
+  @keyframes shadow {
+    0%, 100% { transform: scale(1);   opacity: 0.45; animation-timing-function: ease-out; }
+    50%      { transform: scale(0.5); opacity: 0.15; animation-timing-function: ease-in; }
+  }
+
+  /* 직접 그린 캐릭터: 그림 + 아래에 작은 이름 */
+  #characters { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .char-track {
+    position: absolute;
+    left: 0;
+    bottom: 63px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none; /* 길게 눌렀을 때 휴대폰의 '이미지 저장' 메뉴가 안 뜨게 */
+    animation: rollChar 9s linear infinite;
+  }
+  @keyframes rollChar {
+    from { transform: translateX(-160px); }
+    to   { transform: translateX(calc(100vw + 160px)); }
+  }
+  .char-hop {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: hop 0.8s infinite;
+  }
+  .char-img {
+    display: block;
+    transform-origin: bottom center;
+    pointer-events: none;
+    animation: squash 0.8s infinite;
+  }
+  .char-name {
+    max-width: 120px;
+    margin-top: 2px;
+    padding: 1px 8px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 999px;
+    color: #ff5c8a;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  /* 누르고 있는 동안: 멈추고, 머리 위에 3초 진행 막대가 차올라요 */
+  .char-track.paused,
+  .char-track.paused * { animation-play-state: paused !important; }
+  .hold-bar {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    width: 44px; height: 6px;
+    margin-left: -22px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 1px #ffd1e0;
+    overflow: hidden;
+    opacity: 0;
+  }
+  .holding .hold-bar { opacity: 1; }
+  .hold-bar::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 100%;
+    background: #ff5c8a;
+  }
+  .holding .hold-bar::before { animation: holdFill 3s linear forwards; }
+  @keyframes holdFill { to { width: 100%; } }
+
+  /* 움직임을 줄이도록 설정한 사람을 위한 배려 */
+  @media (prefers-reduced-motion: reduce) {
+    .title, .btn-base, .ball-hop, .ball, .shadow, .shake,
+    .char-hop, .char-img { animation: none !important; }
+    #bright, .fade, .modal, .panel { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== 첫 화면 오른쪽 위: 언어 선택 ===== -->
+  <div class="lang-picker">
+    <select id="langSelect" aria-label="Language"></select>
+  </div>
+
+  <!-- ===== 어두운 화면 ===== -->
+  <main id="dark" class="screen">
+    <h1 id="title" class="title fade">DO NOT PRESS</h1>
+    <p id="message" class="message fade"></p>
+    <div class="btn-base">
+      <button id="redBtn" class="red-btn" type="button" aria-label="Red button"></button>
+    </div>
+  </main>
+
+  <!-- ===== "정말 누르시겠습니까?" 창 ===== -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmQ" aria-hidden="true">
+    <div class="panel">
+      <p id="confirmQ" class="ask"></p>
+      <div class="actions">
+        <button id="noBtn" class="cancel-btn" type="button"></button>
+        <button id="yesBtn" class="confirm-btn" type="button"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 밝은 화면 (눌러 버리면 나타남) ===== -->
+  <section id="bright" class="screen" data-stage="draw" aria-hidden="true">
+    <button id="backArrow" class="round-btn back-arrow" type="button">&lt;</button>
+
+    <!-- 오른쪽 위: 누른 사람들 목록 버튼 + 서버(지구) 버튼 -->
+    <div class="top-right">
+      <button id="peopleBtn" class="round-btn" type="button" aria-expanded="false">
+        👥 <span id="peopleCount">0</span>
+      </button>
+      <button id="serverBtn" class="round-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="peopleDrop" class="people-drop" hidden>
+      <p id="peopleTitle"></p>
+      <ul id="peopleList"></ul>
+    </div>
+
+    <div class="bright-content">
+      <p id="thanks" class="thanks"></p>
+
+      <!-- 1단계: 캐릭터 그리기 -->
+      <div class="stage stage-draw">
+        <p id="drawPrompt" class="prompt"></p>
+        <div id="canvasWrap" class="canvas-wrap">
+          <canvas id="pad"></canvas>
+        </div>
+
+        <!-- 색깔 -->
+        <div class="tools">
+          <button class="swatch active" type="button" data-color="#4a3426" style="background:#4a3426"></button>
+          <button class="swatch" type="button" data-color="#ff5c8a" style="background:#ff5c8a"></button>
+          <button class="swatch" type="button" data-color="#ffb703" style="background:#ffb703"></button>
+          <button class="swatch" type="button" data-color="#4cc9f0" style="background:#4cc9f0"></button>
+          <button class="swatch" type="button" data-color="#62c370" style="background:#62c370"></button>
+          <button class="swatch" type="button" data-color="#a77bdb" style="background:#a77bdb"></button>
+          <input id="colorPick" class="color-pick" type="color" value="#ff5c8a">
+        </div>
+
+        <!-- 붓 굵기, 지우개, 되돌리기, 레이어 지우기, 격자 -->
+        <div class="tools">
+          <button class="tool brush" type="button" data-size="2"><span class="dot" style="width:4px;height:4px"></span></button>
+          <button class="tool brush active" type="button" data-size="6"><span class="dot" style="width:8px;height:8px"></span></button>
+          <button class="tool brush" type="button" data-size="14"><span class="dot" style="width:16px;height:16px"></span></button>
+          <button id="eraserBtn" class="tool" type="button">🧽</button>
+          <button id="undoBtn" class="tool" type="button">↶</button>
+          <button id="clearBtn" class="tool" type="button">🗑️</button>
+          <button id="gridBtn" class="tool" type="button">▦</button>
+        </div>
+
+        <!-- 레이어 + 사진 넣기 -->
+        <div class="tools layer-bar">
+          <span id="layerLabel" class="label"></span>
+          <button class="tool layer-btn active" type="button" data-layer="0">1</button>
+          <button class="tool layer-btn" type="button" data-layer="1">2</button>
+          <button class="tool layer-btn" type="button" data-layer="2">3</button>
+          <button id="eyeBtn" class="tool" type="button">👁</button>
+          <button id="imgBtn" class="tool wide-tool" type="button">🖼️ <span id="imgBtnText"></span></button>
+          <input id="imgFile" type="file" accept="image/*" hidden>
+        </div>
+
+        <!-- 사진을 넣었을 때만 보여요 -->
+        <div id="imgBar" class="tools img-bar" hidden>
+          <label class="check"><input id="traceCheck" type="checkbox" checked> <span id="traceText"></span></label>
+          <button id="imgRemove" class="tool wide-tool" type="button">✕ <span id="imgRemoveText"></span></button>
+        </div>
+
+        <button id="doneBtn" class="pill-btn" type="button"></button>
+      </div>
+
+      <!-- 2단계: 캐릭터 설정 + 이름·설명 -->
+      <div class="stage stage-name">
+        <div class="preview-box"><img id="preview" class="preview" alt=""></div>
+
+        <label class="opt-row">
+          <span id="sizeLabel"></span>
+          <input id="sizeSlider" type="range" min="28" max="120" step="1" value="64">
+        </label>
+        <div class="opt-row">
+          <span id="hopLabel"></span>
+          <div class="seg" data-group="hop">
+            <button type="button" data-v="slow"></button>
+            <button type="button" data-v="normal" class="active"></button>
+            <button type="button" data-v="fast"></button>
+          </div>
+        </div>
+        <div class="opt-row">
+          <span id="rollLabel"></span>
+          <div class="seg" data-group="roll">
+            <button type="button" data-v="slow"></button>
+            <button type="button" data-v="normal" class="active"></button>
+            <button type="button" data-v="fast"></button>
+          </div>
+        </div>
+
+        <input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="off">
+        <textarea id="descInput" class="desc-input" rows="2" maxlength="120"></textarea>
+        <button id="okBtn" class="pill-btn" type="button"></button>
+      </div>
+    </div>
+
+    <div class="ground"></div>
+    <!-- 직접 그린 캐릭터들이 여기에 추가돼요 -->
+    <div id="characters"></div>
+    <div class="ball-track" aria-hidden="true">
+      <div class="shadow"></div>
+      <div class="ball-hop">
+        <div class="ball">
+          <span class="eye left"></span><span class="eye right"></span>
+          <span class="cheek left"></span><span class="cheek right"></span>
+          <span class="mouth"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 캐릭터 정보 (캐릭터를 3초 누르거나, 목록에서 이름을 누르면) -->
+    <div id="infoPanel" class="overlay" hidden>
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="infoName">
+        <img id="infoImg" class="info-img" alt="">
+        <p id="infoName" class="info-name"></p>
+        <p id="infoDesc" class="info-desc"></p>
+        <div class="card-actions">
+          <button id="infoEdit" class="small-btn" type="button"></button>
+          <button id="infoDel" class="small-btn danger" type="button"></button>
+          <button id="infoClose" class="small-btn" type="button"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 서버 선택 (지구 버튼) -->
+    <div id="serverPanel" class="overlay" hidden>
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="serverTitle">
+        <p id="serverTitle" class="card-title"></p>
+        <button class="server-opt active" type="button" data-server="solo">
+          <span class="ico">🏠</span>
+          <span class="txt"><span class="name" id="soloName"></span></span>
+          <span>✓</span>
+        </button>
+        <!-- 아래 두 개는 데이터베이스를 연결해야 쓸 수 있어요 -->
+        <button class="server-opt" type="button" data-server="global" disabled>
+          <span class="ico">🌍</span>
+          <span class="txt"><span class="name" id="globalName"></span><span class="sub need-db"></span></span>
+        </button>
+        <button class="server-opt" type="button" data-server="room" disabled>
+          <span class="ico">🔗</span>
+          <span class="txt"><span class="name" id="roomName"></span><span class="sub need-db"></span></span>
+        </button>
+        <div class="card-actions">
+          <button id="serverClose" class="small-btn" type="button"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<script>
+  // ===== 1. 언어별 문장 =====
+  // name: 언어 선택 목록에 보일 이름. 맨 위(English)가 기본 언어예요.
+  const LANGS = {
+    en: {
+      name: 'English', dir: 'ltr',
+      title: 'DO NOT PRESS',
+      text: 'Never press this button. Once pressed, it cannot be undone. Will you still press it?',
+      red: 'Red button', confirm: 'Are you really going to press it?', yes: 'Press', no: "Don't press",
+      pressed: 'You pressed it!',
+      draw: 'Draw your own character!', done: "I'm done", namePh: 'Please write the name you want.', ok: 'OK',
+      descPh: 'Describe your character (optional)', noDesc: 'No description yet',
+      eraser: 'Eraser', undo: 'Undo', clear: 'Clear layer', grid: 'Grid', back: 'Back',
+      layer: 'Layer', eye: 'Show/hide layer', addImage: 'Picture', trace: 'Trace only', removeImage: 'Remove',
+      size: 'Size', hopLabel: 'Bounce', rollLabel: 'Passing', slow: 'Slow', normal: 'Normal', fast: 'Fast',
+      edit: 'Draw more', del: 'Delete', close: 'Close', people: 'People who pressed',
+      server: 'Choose a server', solo: 'My server (just me)', global: "Everyone's server",
+      room: "Friends' room (code · link)", needDb: 'Opens once the database is connected' },
+    ko: {
+      name: '한국어', dir: 'ltr',
+      title: '누르지 마시오',
+      text: '이 버튼은 절대 누르지 마십시오. 한 번 누르면 되돌릴 수 없습니다. 그럼에도 누르시겠습니까?',
+      red: '빨간 버튼', confirm: '정말 누르시겠습니까?', yes: '누른다', no: '안 누른다',
+      pressed: '눌러 버렸군요!',
+      draw: '나만의 캐릭터를 그려 보세요!', done: '다 그렸어요', namePh: '원하는 이름을 적어 주세요.', ok: '확인',
+      descPh: '캐릭터 설명을 적어 주세요 (선택)', noDesc: '아직 설명이 없어요',
+      eraser: '지우개', undo: '되돌리기', clear: '레이어 지우기', grid: '격자', back: '뒤로',
+      layer: '레이어', eye: '레이어 보이기/숨기기', addImage: '사진', trace: '따라 그리기용', removeImage: '빼기',
+      size: '크기', hopLabel: '튀는 속도', rollLabel: '지나가는 속도', slow: '느리게', normal: '보통', fast: '빠르게',
+      edit: '더 그리기', del: '삭제', close: '닫기', people: '누른 사람들',
+      server: '서버 선택', solo: '내 서버 (나 혼자)', global: '전체 서버',
+      room: '친구 방 (코드 · 링크)', needDb: '데이터베이스를 연결하면 열려요' },
+    ja: {
+      name: '日本語', dir: 'ltr',
+      title: '押すな',
+      text: 'このボタンは絶対に押さないでください。一度押すと元に戻せません。それでも押しますか？',
+      red: '赤いボタン', confirm: '本当に押しますか？', yes: '押す', no: '押さない',
+      pressed: '押しちゃいましたね！',
+      draw: 'あなただけのキャラクターを描いてみよう！', done: '描けた！', namePh: '好きな名前を書いてください。', ok: 'OK',
+      descPh: 'キャラの説明を書いてください（任意）', noDesc: 'まだ説明がありません',
+      eraser: '消しゴム', undo: '元に戻す', clear: 'レイヤーを消す', grid: 'グリッド', back: '戻る',
+      layer: 'レイヤー', eye: 'レイヤーの表示/非表示', addImage: '画像', trace: 'なぞり描き用', removeImage: '外す',
+      size: 'サイズ', hopLabel: '跳ねる速さ', rollLabel: '進む速さ', slow: 'ゆっくり', normal: '普通', fast: '速い',
+      edit: '描き足す', del: '削除', close: '閉じる', people: '押した人たち',
+      server: 'サーバーを選ぶ', solo: '自分のサーバー（自分だけ）', global: 'みんなのサーバー',
+      room: '友だちの部屋（コード・リンク）', needDb: 'データベースをつなぐと使えます' },
+    zh: {
+      name: '中文', dir: 'ltr',
+      title: '请勿按下',
+      text: '请千万不要按这个按钮。一旦按下就无法撤回。即便如此，您还要按吗？',
+      red: '红色按钮', confirm: '真的要按吗？', yes: '按下', no: '不按',
+      pressed: '你按下去了！',
+      draw: '画出属于你的角色吧！', done: '画好了', namePh: '请写下你想要的名字。', ok: '确定',
+      descPh: '写下角色介绍（可选）', noDesc: '还没有介绍',
+      eraser: '橡皮擦', undo: '撤销', clear: '清除图层', grid: '网格', back: '返回',
+      layer: '图层', eye: '显示/隐藏图层', addImage: '图片', trace: '仅用于临摹', removeImage: '移除',
+      size: '大小', hopLabel: '弹跳速度', rollLabel: '移动速度', slow: '慢', normal: '普通', fast: '快',
+      edit: '继续画', del: '删除', close: '关闭', people: '按过的人',
+      server: '选择服务器', solo: '我的服务器（只有我）', global: '公共服务器',
+      room: '好友房间（代码 · 链接）', needDb: '连接数据库后开放' },
+    es: {
+      name: 'Español', dir: 'ltr',
+      title: 'NO PULSAR',
+      text: 'Nunca pulses este botón. Una vez pulsado, no se puede deshacer. ¿Aun así lo pulsarás?',
+      red: 'Botón rojo', confirm: '¿De verdad vas a pulsarlo?', yes: 'Pulsar', no: 'No pulsar',
+      pressed: '¡Lo pulsaste!',
+      draw: '¡Dibuja tu propio personaje!', done: 'Ya terminé', namePh: 'Escribe el nombre que quieras.', ok: 'Aceptar',
+      descPh: 'Describe a tu personaje (opcional)', noDesc: 'Aún sin descripción',
+      eraser: 'Borrador', undo: 'Deshacer', clear: 'Borrar capa', grid: 'Cuadrícula', back: 'Volver',
+      layer: 'Capa', eye: 'Mostrar/ocultar capa', addImage: 'Imagen', trace: 'Solo para calcar', removeImage: 'Quitar',
+      size: 'Tamaño', hopLabel: 'Rebote', rollLabel: 'Paso', slow: 'Lento', normal: 'Normal', fast: 'Rápido',
+      edit: 'Dibujar más', del: 'Eliminar', close: 'Cerrar', people: 'Quienes lo pulsaron',
+      server: 'Elegir servidor', solo: 'Mi servidor (solo yo)', global: 'Servidor de todos',
+      room: 'Sala de amigos (código · enlace)', needDb: 'Se abrirá al conectar la base de datos' },
+    fr: {
+      name: 'Français', dir: 'ltr',
+      title: 'NE PAS APPUYER',
+      text: "N'appuyez jamais sur ce bouton. Une fois appuyé, impossible de revenir en arrière. Allez-vous quand même appuyer ?",
+      red: 'Bouton rouge', confirm: 'Vous allez vraiment appuyer ?', yes: 'Appuyer', no: 'Ne pas appuyer',
+      pressed: 'Vous avez appuyé !',
+      draw: 'Dessinez votre propre personnage !', done: "J'ai fini", namePh: 'Écrivez le nom de votre choix.', ok: 'OK',
+      descPh: 'Décrivez votre personnage (facultatif)', noDesc: 'Pas encore de description',
+      eraser: 'Gomme', undo: 'Annuler', clear: 'Effacer le calque', grid: 'Grille', back: 'Retour',
+      layer: 'Calque', eye: 'Afficher/masquer le calque', addImage: 'Image', trace: 'Pour décalquer', removeImage: 'Retirer',
+      size: 'Taille', hopLabel: 'Rebond', rollLabel: 'Passage', slow: 'Lent', normal: 'Normal', fast: 'Rapide',
+      edit: 'Continuer', del: 'Supprimer', close: 'Fermer', people: 'Ceux qui ont appuyé',
+      server: 'Choisir un serveur', solo: 'Mon serveur (moi seul)', global: 'Serveur de tous',
+      room: 'Salon entre amis (code · lien)', needDb: 'Disponible après connexion de la base de données' },
+    de: {
+      name: 'Deutsch', dir: 'ltr',
+      title: 'NICHT DRÜCKEN',
+      text: 'Drück diesen Knopf niemals. Einmal gedrückt, lässt es sich nicht rückgängig machen. Drückst du ihn trotzdem?',
+      red: 'Roter Knopf', confirm: 'Willst du ihn wirklich drücken?', yes: 'Drücken', no: 'Nicht drücken',
+      pressed: 'Du hast ihn gedrückt!',
+      draw: 'Zeichne deine eigene Figur!', done: 'Fertig', namePh: 'Schreib den Namen, den du möchtest.', ok: 'OK',
+      descPh: 'Beschreibe deine Figur (optional)', noDesc: 'Noch keine Beschreibung',
+      eraser: 'Radiergummi', undo: 'Rückgängig', clear: 'Ebene löschen', grid: 'Raster', back: 'Zurück',
+      layer: 'Ebene', eye: 'Ebene ein-/ausblenden', addImage: 'Bild', trace: 'Nur zum Abpausen', removeImage: 'Entfernen',
+      size: 'Größe', hopLabel: 'Hüpfen', rollLabel: 'Laufen', slow: 'Langsam', normal: 'Normal', fast: 'Schnell',
+      edit: 'Weiterzeichnen', del: 'Löschen', close: 'Schließen', people: 'Wer gedrückt hat',
+      server: 'Server wählen', solo: 'Mein Server (nur ich)', global: 'Server für alle',
+      room: 'Freundesraum (Code · Link)', needDb: 'Verfügbar, sobald die Datenbank verbunden ist' },
+    ru: {
+      name: 'Русский', dir: 'ltr',
+      title: 'НЕ НАЖИМАТЬ',
+      text: 'Никогда не нажимайте эту кнопку. Нажатие нельзя отменить. Вы всё равно нажмёте?',
+      red: 'Красная кнопка', confirm: 'Вы правда нажмёте?', yes: 'Нажать', no: 'Не нажимать',
+      pressed: 'Вы нажали!',
+      draw: 'Нарисуйте своего персонажа!', done: 'Готово', namePh: 'Напишите имя, которое хотите.', ok: 'ОК',
+      descPh: 'Опишите персонажа (необязательно)', noDesc: 'Описания пока нет',
+      eraser: 'Ластик', undo: 'Отменить', clear: 'Очистить слой', grid: 'Сетка', back: 'Назад',
+      layer: 'Слой', eye: 'Показать/скрыть слой', addImage: 'Картинка', trace: 'Только для обводки', removeImage: 'Убрать',
+      size: 'Размер', hopLabel: 'Прыжки', rollLabel: 'Движение', slow: 'Медленно', normal: 'Обычно', fast: 'Быстро',
+      edit: 'Дорисовать', del: 'Удалить', close: 'Закрыть', people: 'Кто нажал',
+      server: 'Выбор сервера', solo: 'Мой сервер (только я)', global: 'Общий сервер',
+      room: 'Комната друзей (код · ссылка)', needDb: 'Откроется после подключения базы данных' },
+    vi: {
+      name: 'Tiếng Việt', dir: 'ltr',
+      title: 'ĐỪNG BẤM',
+      text: 'Đừng bao giờ bấm nút này. Đã bấm thì không thể hoàn tác. Bạn vẫn muốn bấm chứ?',
+      red: 'Nút đỏ', confirm: 'Bạn thật sự muốn bấm sao?', yes: 'Bấm', no: 'Không bấm',
+      pressed: 'Bạn đã bấm rồi!',
+      draw: 'Hãy vẽ nhân vật của riêng bạn!', done: 'Vẽ xong rồi', namePh: 'Hãy viết tên bạn muốn.', ok: 'Xác nhận',
+      descPh: 'Mô tả nhân vật (không bắt buộc)', noDesc: 'Chưa có mô tả',
+      eraser: 'Tẩy', undo: 'Hoàn tác', clear: 'Xóa lớp', grid: 'Lưới', back: 'Quay lại',
+      layer: 'Lớp', eye: 'Hiện/ẩn lớp', addImage: 'Ảnh', trace: 'Chỉ để đồ theo', removeImage: 'Bỏ',
+      size: 'Kích thước', hopLabel: 'Tốc độ nảy', rollLabel: 'Tốc độ đi', slow: 'Chậm', normal: 'Vừa', fast: 'Nhanh',
+      edit: 'Vẽ thêm', del: 'Xóa', close: 'Đóng', people: 'Những người đã bấm',
+      server: 'Chọn máy chủ', solo: 'Máy chủ của tôi (chỉ mình tôi)', global: 'Máy chủ chung',
+      room: 'Phòng bạn bè (mã · liên kết)', needDb: 'Sẽ mở khi kết nối cơ sở dữ liệu' },
+    ar: {
+      name: 'العربية', dir: 'rtl',
+      title: 'لا تضغط',
+      text: 'لا تضغط على هذا الزر أبدًا. بمجرد الضغط لا يمكن التراجع. هل ستضغط رغم ذلك؟',
+      red: 'زر أحمر', confirm: 'هل ستضغط حقًا؟', yes: 'اضغط', no: 'لا تضغط',
+      pressed: 'لقد ضغطت!',
+      draw: 'ارسم شخصيتك الخاصة!', done: 'انتهيت', namePh: 'اكتب الاسم الذي تريده.', ok: 'تأكيد',
+      descPh: 'صف شخصيتك (اختياري)', noDesc: 'لا يوجد وصف بعد',
+      eraser: 'ممحاة', undo: 'تراجع', clear: 'مسح الطبقة', grid: 'الشبكة', back: 'رجوع',
+      layer: 'طبقة', eye: 'إظهار/إخفاء الطبقة', addImage: 'صورة', trace: 'للتتبع فقط', removeImage: 'إزالة',
+      size: 'الحجم', hopLabel: 'القفز', rollLabel: 'المرور', slow: 'بطيء', normal: 'عادي', fast: 'سريع',
+      edit: 'أكمل الرسم', del: 'حذف', close: 'إغلاق', people: 'من ضغطوا',
+      server: 'اختر الخادم', solo: 'خادمي (أنا فقط)', global: 'خادم الجميع',
+      room: 'غرفة الأصدقاء (رمز · رابط)', needDb: 'يُفتح بعد ربط قاعدة البيانات' }
+  };
+
+  // ===== 2. 캐릭터 기본값 =====
+  const DEFAULT_SIZE = 64;   // 처음 크기 (공은 56)
+  const HOP_TIME = { slow: 1.1, normal: 0.8, fast: 0.5 };   // 한 번 튀는 데 걸리는 시간(초)
+  const ROLL_TIME = { slow: 15, normal: 9, fast: 5 };       // 화면을 한 번 지나가는 시간(초)
+  const LAYER_COUNT = 3;
+
+  // ===== 3. 화면 요소 가져오기 =====
+  const $ = (id) => document.getElementById(id);
+  const dark = $('dark'), bright = $('bright'), modal = $('modal');
+  const langSelect = $('langSelect');
+  const titleEl = $('title'), msgEl = $('message'), redBtn = $('redBtn');
+  const confirmQ = $('confirmQ'), yesBtn = $('yesBtn'), noBtn = $('noBtn');
+  const thanksEl = $('thanks'), backArrow = $('backArrow');
+  const peopleBtn = $('peopleBtn'), peopleCount = $('peopleCount'), peopleDrop = $('peopleDrop');
+  const peopleTitle = $('peopleTitle'), peopleList = $('peopleList');
+  const serverBtn = $('serverBtn'), serverPanel = $('serverPanel');
+  const drawPrompt = $('drawPrompt'), canvasWrap = $('canvasWrap'), pad = $('pad');
+  const eraserBtn = $('eraserBtn'), undoBtn = $('undoBtn'), clearBtn = $('clearBtn'), gridBtn = $('gridBtn');
+  const colorPick = $('colorPick'), eyeBtn = $('eyeBtn'), imgBtn = $('imgBtn'), imgFile = $('imgFile');
+  const imgBar = $('imgBar'), traceCheck = $('traceCheck'), imgRemove = $('imgRemove'), doneBtn = $('doneBtn');
+  const preview = $('preview'), sizeSlider = $('sizeSlider');
+  const nameInput = $('nameInput'), descInput = $('descInput'), okBtn = $('okBtn');
+  const charactersEl = $('characters');
+  const infoPanel = $('infoPanel'), infoImg = $('infoImg'), infoName = $('infoName'), infoDesc = $('infoDesc');
+  const infoEdit = $('infoEdit'), infoDel = $('infoDel'), infoClose = $('infoClose');
+
+  let lang = 'en';                       // 지금 선택된 언어
+  const T = () => LANGS[lang];           // 지금 언어의 문장들
+
+  // ===== 4. 언어 선택 =====
+  Object.keys(LANGS).forEach((code) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = LANGS[code].name;
+    langSelect.appendChild(opt);
+  });
+
+  function setLang(code, animate) {
+    lang = LANGS[code] ? code : 'en';
+    document.documentElement.lang = lang;
+    langSelect.value = lang;
+
+    const apply = () => {
+      const s = T();
+      titleEl.textContent = s.title;
+      msgEl.textContent = s.text;
+      msgEl.dir = s.dir;
+      titleEl.dir = s.dir;
+      redBtn.setAttribute('aria-label', s.red + ' — ' + s.title);
+      document.title = s.title;
+    };
+
+    if (!animate) { apply(); return; }
+    titleEl.classList.add('hide');
+    msgEl.classList.add('hide');
+    setTimeout(() => {
+      apply();
+      titleEl.classList.remove('hide');
+      msgEl.classList.remove('hide');
+    }, 300);
+  }
+
+  // 방문자 브라우저 언어 읽기 (예: 'ko-KR' → 한국어 / 목록에 없으면 English)
+  function detectLang() {
+    const prefs = (navigator.languages && navigator.languages.length)
+      ? navigator.languages : [navigator.language || 'en'];
+    for (const tag of prefs) {
+      const base = tag.toLowerCase().split('-')[0];
+      if (LANGS[base]) return base;
+    }
+    return 'en';
+  }
+
+  langSelect.addEventListener('change', () => {
+    setLang(langSelect.value, true);
+    // 직접 고른 언어는 기억해 두기 (안 되는 환경이면 그냥 넘어감)
+    try { localStorage.setItem('lang', lang); } catch (e) {}
+  });
+
+  // ===== 5. 빨간 버튼 → "정말 누르시겠습니까?" =====
+  function openModal() {
+    const s = T();
+    modal.lang = lang;
+    modal.dir = s.dir;
+    confirmQ.textContent = s.confirm;
+    yesBtn.textContent = s.yes;
+    noBtn.textContent = s.no;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(() => noBtn.focus(), 50);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  redBtn.addEventListener('click', openModal);
+  noBtn.addEventListener('click', () => { closeModal(); redBtn.focus(); });
+  modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(); redBtn.focus(); } });
+  yesBtn.addEventListener('click', () => pressNow(yesBtn));
+
+  function pressNow(fromEl) {
+    applyBrightTexts();
+    thanksEl.textContent = T().pressed;
+    editingId = null;
+    startDrawing(null);
+    openBright(fromEl);
+    closeModal();
+  }
+
+  // ===== 6. 밝은 화면 =====
+  function applyBrightTexts() {
+    const s = T();
+    bright.lang = lang;
+    bright.dir = s.dir;
+    drawPrompt.textContent = s.draw;
+    doneBtn.textContent = s.done;
+    okBtn.textContent = s.ok;
+    nameInput.placeholder = s.namePh;
+    descInput.placeholder = s.descPh;
+    $('sizeLabel').textContent = s.size;
+    $('hopLabel').textContent = s.hopLabel;
+    $('rollLabel').textContent = s.rollLabel;
+    $('layerLabel').textContent = s.layer;
+    $('imgBtnText').textContent = s.addImage;
+    $('traceText').textContent = s.trace;
+    $('imgRemoveText').textContent = s.removeImage;
+    document.querySelectorAll('.seg button').forEach((b) => { b.textContent = s[b.dataset.v]; });
+    [[eraserBtn, s.eraser], [undoBtn, s.undo], [clearBtn, s.clear], [gridBtn, s.grid],
+     [eyeBtn, s.eye], [backArrow, s.back], [peopleBtn, s.people], [serverBtn, s.server]]
+      .forEach(([el, label]) => { el.title = label; el.setAttribute('aria-label', label); });
+    peopleTitle.textContent = s.people;
+    infoEdit.textContent = s.edit;
+    infoDel.textContent = s.del;
+    infoClose.textContent = s.close;
+    $('serverTitle').textContent = s.server;
+    $('soloName').textContent = s.solo;
+    $('globalName').textContent = s.global;
+    $('roomName').textContent = s.room;
+    document.querySelectorAll('.need-db').forEach((el) => { el.textContent = s.needDb; });
+    $('serverClose').textContent = s.close;
+  }
+
+  function openBright(fromEl) {
+    // 누른 버튼 위치에서 원이 퍼지도록 좌표 저장
+    const r = fromEl.getBoundingClientRect();
+    bright.style.transition = 'none';
+    bright.style.setProperty('--x', (r.left + r.width / 2) + 'px');
+    bright.style.setProperty('--y', (r.top + r.height / 2) + 'px');
+    void bright.offsetWidth;          // 브라우저가 위치를 먼저 적용하게 함
+    bright.style.transition = '';
+
+    bright.classList.add('open');
+    bright.setAttribute('aria-hidden', 'false');
+    dark.setAttribute('aria-hidden', 'true');
+  }
+
+  function closeBright() {
+    // 빨간 버튼 위치로 원이 다시 줄어들게
+    const r = redBtn.getBoundingClientRect();
+    bright.style.setProperty('--x', (r.left + r.width / 2) + 'px');
+    bright.style.setProperty('--y', (r.top + r.height / 2) + 'px');
+    bright.classList.remove('open');
+    bright.setAttribute('aria-hidden', 'true');
+    dark.setAttribute('aria-hidden', 'false');
+    peopleDrop.hidden = true;
+  }
+
+  // 단계 바꾸기: 'draw'(그리기) → 'name'(설정·이름) → 'done'(완성)
+  function setStage(stage) {
+    bright.dataset.stage = stage;
+    if (stage === 'draw') resizePad();
+  }
+
+  // "<" 버튼
+  //  - 이름 단계 → 그리기로
+  //  - 고치는 중에 그리기 단계 → 완성 화면으로 (고치기 취소)
+  //  - 그 밖 → 첫 화면으로
+  backArrow.addEventListener('click', () => {
+    const stage = bright.dataset.stage;
+    if (stage === 'name') setStage('draw');
+    else if (stage === 'draw' && editingId) finishToDone();
+    else closeBright();
+  });
+
+  function finishToDone() {
+    thanksEl.textContent = T().pressed;
+    editingId = null;
+    setStage('done');
+  }
+
+  // ===== 7. 그림판 (레이어 3장 + 사진 1장) =====
+  // 레이어는 투명한 종이를 여러 장 겹친 것과 같아요.
+  // 각 레이어는 따로 그리고 지울 수 있어서, 예를 들어
+  // 1번에 몸통, 2번에 얼굴, 3번에 모자를 그리면 서로 망가뜨리지 않아요.
+  const ctx = pad.getContext('2d');
+  let layers = [];           // { canvas, ctx, base(이전 그림), strokes, visible }
+  let activeLayer = 0;
+  let undoStack = [];        // 어떤 레이어에 선을 그었는지 순서대로 (되돌리기용)
+  let currentStroke = null;
+  let refImg = null;         // 넣은 사진
+  let refData = null;        // 넣은 사진(저장용)
+  let refTrace = true;       // true면 흐리게 보이고 캐릭터에는 안 들어가요 (따라 그리기용)
+  let penColor = '#4a3426';
+  let penSize = 6;
+  let erasing = false;
+  const ERASER_SIZE = 20;
+  let editingId = null;      // "더 그리기" 중인 캐릭터
+
+  function makeLayer() {
+    const c = document.createElement('canvas');
+    return { canvas: c, ctx: c.getContext('2d'), base: null, strokes: [], visible: true };
+  }
+
+  function loadImage(src, onload) {
+    const img = new Image();
+    img.onload = () => onload(img);
+    img.src = src;
+    return img;
+  }
+
+  function startDrawing(ch) {
+    layers = [];
+    for (let i = 0; i < LAYER_COUNT; i++) layers.push(makeLayer());
+    activeLayer = 0;
+    undoStack = [];
+    refImg = null; refData = null; refTrace = true;
+    erasing = false; penColor = '#4a3426'; penSize = 6;
+    canvasWrap.classList.remove('grid');
+    document.querySelectorAll('.swatch, .tool, .color-pick').forEach((b) => b.classList.remove('active'));
+    document.querySelector('.swatch').classList.add('active');
+    document.querySelector('.brush[data-size="6"]').classList.add('active');
+
+    setStage('draw');
+
+    if (ch) {
+      // 이전 그림 불러오기 (예전 버전 캐릭터는 한 장짜리 그림을 1번 레이어로)
+      const saved = ch.layers || [ch.base, null, null];
+      saved.forEach((src, i) => {
+        if (src && layers[i]) layers[i].base = loadImage(src, () => { renderLayer(layers[i]); composite(); });
+        if (ch.layerVisible && layers[i]) layers[i].visible = ch.layerVisible[i] !== false;
+      });
+      if (ch.ref) {
+        refData = ch.ref;
+        refTrace = ch.refTrace !== false;
+        refImg = loadImage(ch.ref, composite);
+      }
+    }
+    updateLayerUI();
+    updateImgUI();
+    resizePad();
+  }
+
+  // 화면 크기에 맞춰 그림판 해상도 맞추기 (선명하게 보이도록)
+  function resizePad() {
+    const r = pad.getBoundingClientRect();
+    if (!r.width) return;
+    const dpr = window.devicePixelRatio || 1;
+    pad.width = Math.round(r.width * dpr);
+    pad.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layers.forEach((L) => {
+      L.canvas.width = pad.width;
+      L.canvas.height = pad.height;
+      L.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      renderLayer(L);
+    });
+    composite();
+  }
+  window.addEventListener('resize', () => { if (bright.dataset.stage === 'draw') resizePad(); });
+
+  function strokeStyle(c, s) {
+    c.globalCompositeOperation = s.erase ? 'destination-out' : 'source-over';
+    c.strokeStyle = s.color;
+    c.fillStyle = s.color;
+    c.lineWidth = s.size;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+  }
+
+  function drawStroke(c, s) {
+    c.save();
+    strokeStyle(c, s);
+    const pts = s.points;
+    c.beginPath();
+    if (pts.length === 1) {
+      c.arc(pts[0].x, pts[0].y, s.size / 2, 0, Math.PI * 2);
+      c.fill();
+    } else {
+      c.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y);
+      c.stroke();
+    }
+    c.restore();
+  }
+
+  // 레이어 한 장을 처음부터 다시 그리기 (이전 그림 + 새로 그은 선)
+  function renderLayer(L) {
+    L.ctx.save();
+    L.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    L.ctx.clearRect(0, 0, L.canvas.width, L.canvas.height);
+    L.ctx.restore();
+    if (L.base && L.base.complete && L.base.naturalWidth) {
+      L.ctx.drawImage(L.base, 0, 0, pad.clientWidth, pad.clientHeight);
+    }
+    L.strokes.forEach((s) => drawStroke(L.ctx, s));
+  }
+
+  // 사진을 그림판 안에 꽉 차게(비율 유지) 그리기
+  function drawRef(c, w, h, alpha) {
+    if (!refImg || !refImg.naturalWidth) return;
+    const k = Math.min(w / refImg.naturalWidth, h / refImg.naturalHeight);
+    const dw = refImg.naturalWidth * k, dh = refImg.naturalHeight * k;
+    c.save();
+    c.globalAlpha = alpha;
+    c.drawImage(refImg, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    c.restore();
+  }
+
+  // 화면에 보이는 그림판 = 사진 + 보이는 레이어들을 겹친 것
+  function composite() {
+    const w = pad.clientWidth, h = pad.clientHeight;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, pad.width, pad.height);
+    ctx.restore();
+    drawRef(ctx, w, h, refTrace ? 0.35 : 1);
+    layers.forEach((L) => { if (L.visible) ctx.drawImage(L.canvas, 0, 0, w, h); });
+  }
+
+  function pointFrom(e) {
+    const r = pad.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  pad.addEventListener('pointerdown', (e) => {
+    pad.setPointerCapture(e.pointerId);
+    const L = layers[activeLayer];
+    if (!L.visible) { L.visible = true; updateLayerUI(); } // 숨긴 레이어에 그리면 다시 보이게
+    currentStroke = {
+      color: penColor,
+      size: erasing ? ERASER_SIZE : penSize,
+      erase: erasing,
+      points: [pointFrom(e)]
+    };
+    L.strokes.push(currentStroke);
+    undoStack.push(activeLayer);
+    drawStroke(L.ctx, currentStroke);
+    composite();
+  });
+
+  pad.addEventListener('pointermove', (e) => {
+    if (!currentStroke) return;
+    const L = layers[activeLayer];
+    const pts = currentStroke.points;
+    const prev = pts[pts.length - 1];
+    const p = pointFrom(e);
+    pts.push(p);
+    L.ctx.save();
+    strokeStyle(L.ctx, currentStroke);
+    L.ctx.beginPath();
+    L.ctx.moveTo(prev.x, prev.y);
+    L.ctx.lineTo(p.x, p.y);
+    L.ctx.stroke();
+    L.ctx.restore();
+    composite();
+  });
+
+  const endStroke = () => { currentStroke = null; };
+  pad.addEventListener('pointerup', endStroke);
+  pad.addEventListener('pointercancel', endStroke);
+
+  // --- 색깔, 붓, 지우개 ---
+  function selectColor(color, el) {
+    penColor = color;
+    erasing = false;
+    document.querySelectorAll('.swatch, #eraserBtn, .color-pick').forEach((b) => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  document.querySelectorAll('.swatch').forEach((sw) => {
+    sw.addEventListener('click', () => selectColor(sw.dataset.color, sw));
+  });
+  colorPick.addEventListener('input', () => selectColor(colorPick.value, colorPick));
+  colorPick.addEventListener('click', () => selectColor(colorPick.value, colorPick));
+
+  document.querySelectorAll('.brush').forEach((b) => {
+    b.addEventListener('click', () => {
+      penSize = Number(b.dataset.size);
+      document.querySelectorAll('.brush').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  eraserBtn.addEventListener('click', () => {
+    erasing = true;
+    document.querySelectorAll('.swatch, .color-pick').forEach((b) => b.classList.remove('active'));
+    eraserBtn.classList.add('active');
+  });
+
+  undoBtn.addEventListener('click', () => {
+    if (!undoStack.length) return;
+    const L = layers[undoStack.pop()];
+    L.strokes.pop();
+    renderLayer(L);
+    composite();
+  });
+
+  // 지금 레이어만 깨끗하게
+  clearBtn.addEventListener('click', () => {
+    const L = layers[activeLayer];
+    L.strokes = [];
+    L.base = null;
+    undoStack = undoStack.filter((i) => i !== activeLayer);
+    renderLayer(L);
+    composite();
+  });
+
+  gridBtn.addEventListener('click', () => {
+    gridBtn.classList.toggle('active', canvasWrap.classList.toggle('grid'));
+  });
+
+  // --- 레이어 ---
+  function updateLayerUI() {
+    document.querySelectorAll('.layer-btn').forEach((b) => {
+      const i = Number(b.dataset.layer);
+      b.classList.toggle('active', i === activeLayer);
+      b.classList.toggle('off', layers[i] && !layers[i].visible);
+    });
+    eyeBtn.textContent = layers[activeLayer] && layers[activeLayer].visible ? '👁' : '🙈';
+  }
+  document.querySelectorAll('.layer-btn').forEach((b) => {
+    b.addEventListener('click', () => { activeLayer = Number(b.dataset.layer); updateLayerUI(); });
+  });
+  eyeBtn.addEventListener('click', () => {
+    const L = layers[activeLayer];
+    L.visible = !L.visible;
+    updateLayerUI();
+    composite();
+  });
+
+  // --- 사진 넣기 (따라 그리기용 또는 그림에 포함) ---
+  imgBtn.addEventListener('click', () => imgFile.click());
+  imgFile.addEventListener('change', () => {
+    const file = imgFile.files && imgFile.files[0];
+    imgFile.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      loadImage(reader.result, (img) => {
+        // 너무 큰 사진은 작게 줄여서 저장 (휴대폰 저장 공간 아끼기)
+        const k = Math.min(1, 400 / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * k));
+        c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        refData = c.toDataURL('image/png');
+        refTrace = true;
+        refImg = loadImage(refData, composite);
+        updateImgUI();
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+  traceCheck.addEventListener('change', () => { refTrace = traceCheck.checked; composite(); });
+  imgRemove.addEventListener('click', () => {
+    refImg = null; refData = null; refTrace = true;
+    updateImgUI();
+    composite();
+  });
+  function updateImgUI() {
+    imgBar.hidden = !refData;
+    traceCheck.checked = refTrace;
+  }
+
+  // --- 완성 그림 만들기 ---
+  // 보이는 레이어 + (따라 그리기용이 아니면) 사진을 한 장으로 합쳐요
+  function flatten() {
+    const c = document.createElement('canvas');
+    c.width = pad.width;
+    c.height = pad.height;
+    const g = c.getContext('2d');
+    if (!refTrace) drawRef(g, c.width, c.height, 1);
+    layers.forEach((L) => { if (L.visible) g.drawImage(L.canvas, 0, 0); });
+    return c;
+  }
+
+  // 그린 부분만 잘라서 그림(이미지)으로 만들기 (빈 곳은 투명하게)
+  function cropDrawing() {
+    const src = flatten();
+    const w = src.width, h = src.height;
+    const data = src.getContext('2d').getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] > 10) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null; // 아무것도 안 그림
+
+    const padding = Math.round(6 * (window.devicePixelRatio || 1));
+    const sx = Math.max(0, minX - padding), sy = Math.max(0, minY - padding);
+    const sw = Math.min(w, maxX + padding + 1) - sx;
+    const sh = Math.min(h, maxY + padding + 1) - sy;
+    const scale = 240 / Math.max(sw, sh); // 항상 긴 쪽이 240px이 되게 (크게 키워도 선명하게)
+
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(sw * scale));
+    out.height = Math.max(1, Math.round(sh * scale));
+    out.getContext('2d').drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height);
+    return out.toDataURL('image/png');
+  }
+
+  // 레이어를 한 장씩 저장 ("더 그리기"할 때 레이어 그대로 다시 불러오려고)
+  function exportLayers() {
+    return layers.map((L) => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 400;
+      c.getContext('2d').drawImage(L.canvas, 0, 0, 400, 400);
+      return c.toDataURL('image/png');
+    });
+  }
+
+  // ===== 8. 다 그렸어요 → 설정·이름·설명 =====
+  let drawingUrl = null, layerUrls = null;
+  let chosen = { size: DEFAULT_SIZE, hop: 'normal', roll: 'normal' };
+
+  doneBtn.addEventListener('click', () => {
+    drawingUrl = cropDrawing();
+    if (!drawingUrl) { shake(canvasWrap); return; } // 빈 그림이면 흔들기
+    layerUrls = exportLayers();
+
+    const old = editingId ? myChars.find((c) => c.id === editingId) : null;
+    chosen = {
+      size: old ? old.size : DEFAULT_SIZE,
+      hop: old && old.hop ? old.hop : 'normal',
+      roll: old && old.roll ? old.roll : 'normal'
+    };
+    sizeSlider.value = chosen.size;
+    setSeg('hop', chosen.hop);
+    setSeg('roll', chosen.roll);
+
+    preview.src = drawingUrl;
+    updatePreviewSize();
+    nameInput.value = old ? old.name : '';
+    descInput.value = old ? (old.desc || '') : '';
+    setStage('name');
+    setTimeout(() => nameInput.focus(), 100);
+  });
+
+  // 칸을 흔들어서 알려 주는 함수
+  function shake(el) {
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+
+  function updatePreviewSize() {
+    preview.style.maxHeight = chosen.size + 'px';
+    preview.style.maxWidth = Math.round(chosen.size * 1.6) + 'px';
+  }
+  sizeSlider.addEventListener('input', () => {
+    chosen.size = Number(sizeSlider.value);
+    updatePreviewSize();
+  });
+
+  function setSeg(group, value) {
+    document.querySelectorAll('.seg[data-group="' + group + '"] button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.v === value);
+    });
+  }
+  document.querySelectorAll('.seg').forEach((seg) => {
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      chosen[seg.dataset.group] = b.dataset.v;
+      setSeg(seg.dataset.group, b.dataset.v);
+    });
+  });
+
+  function confirmName() {
+    const name = nameInput.value.trim();
+    if (!name) { shake(nameInput); nameInput.focus(); return; }
+    const old = editingId ? myChars.find((c) => c.id === editingId) : null;
+
+    const ch = {
+      id: old ? old.id : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name,
+      desc: descInput.value.trim(),
+      img: drawingUrl,
+      layers: layerUrls,
+      layerVisible: layers.map((L) => L.visible),
+      ref: refData,
+      refTrace,
+      size: chosen.size,
+      hop: chosen.hop,
+      roll: chosen.roll
+    };
+
+    if (old) myChars[myChars.indexOf(old)] = ch;
+    else myChars.push(ch);
+
+    saveChars();
+    renderCharacters();
+    renderPeople();
+    nameInput.blur();
+    descInput.blur();
+    finishToDone();
+  }
+  okBtn.addEventListener('click', confirmName);
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') descInput.focus(); });
+
+  // ===== 9. 내 캐릭터 저장 (지금은 이 브라우저 안에만 = "내 서버") =====
+  let myChars = [];
+
+  function loadChars() {
+    try { myChars = JSON.parse(localStorage.getItem('myChars') || '[]'); } catch (e) { myChars = []; }
+    if (!Array.isArray(myChars)) myChars = [];
+  }
+  function saveChars() {
+    try { localStorage.setItem('myChars', JSON.stringify(myChars)); } catch (e) {}
+  }
+
+  // ===== 10. 캐릭터가 공처럼 통통 튀며 지나가게 =====
+  function renderCharacters() {
+    charactersEl.innerHTML = '';
+    myChars.forEach((ch) => charactersEl.appendChild(makeTrack(ch)));
+  }
+
+  function makeTrack(ch) {
+    const hopTime = HOP_TIME[ch.hop] || 0.8;
+    const rollTime = ROLL_TIME[ch.roll] || 9;
+    const size = ch.size || DEFAULT_SIZE;
+
+    const track = document.createElement('div');
+    track.className = 'char-track';
+    track.style.animationDuration = rollTime + 's';
+    track.style.animationDelay = (-Math.random() * rollTime) + 's';
+
+    const shadow = document.createElement('div');
+    shadow.className = 'shadow';
+    shadow.style.animationDuration = hopTime + 's';
+    shadow.style.width = Math.max(16, size * 0.7) + 'px';
+    shadow.style.marginLeft = -Math.max(16, size * 0.7) / 2 + 'px';
+
+    const hop = document.createElement('div');
+    hop.className = 'char-hop';
+    hop.style.animationDuration = hopTime + 's';
+
+    const bar = document.createElement('i');
+    bar.className = 'hold-bar';
+
+    const img = document.createElement('img');
+    img.className = 'char-img';
+    img.src = ch.img;
+    img.alt = '';
+    img.draggable = false;
+    img.style.maxHeight = size + 'px';
+    img.style.maxWidth = Math.round(size * 1.6) + 'px';
+    img.style.animationDuration = hopTime + 's';
+
+    const label = document.createElement('span');
+    label.className = 'char-name';
+    label.textContent = ch.name; // textContent를 써야 이상한 코드가 들어와도 안전해요
+
+    hop.append(bar, img, label);
+    track.append(shadow, hop);
+    attachHold(track, ch.id);
+    return track;
+  }
+
+  // 누르면 멈추고, 3초 동안 계속 누르면 그 캐릭터의 이름·설명 창이 열려요
+  function attachHold(track, id) {
+    let timer = null;
+    const stop = () => {
+      clearTimeout(timer);
+      timer = null;
+      track.classList.remove('paused', 'holding');
+    };
+    track.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      track.classList.add('paused', 'holding');
+      timer = setTimeout(() => { stop(); openInfo(id); }, 3000);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => track.addEventListener(ev, stop));
+    track.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // ===== 11. 캐릭터 정보 창 (이름·설명 + 더 그리기·삭제) =====
+  let infoId = null;
+  // 지금은 내 서버라 모든 캐릭터가 내 것이에요.
+  // 나중에 전체 서버가 생기면, 남의 캐릭터는 보기만 하고 고칠 수 없게 할 거예요.
+  const isMine = (ch) => true;
+
+  function openInfo(id) {
+    const ch = myChars.find((c) => c.id === id);
+    if (!ch) return;
+    applyBrightTexts();
+    infoId = id;
+    infoImg.src = ch.img;
+    infoName.textContent = ch.name;
+    infoDesc.textContent = ch.desc || T().noDesc;
+    infoEdit.hidden = infoDel.hidden = !isMine(ch);
+    peopleDrop.hidden = true;
+    infoPanel.hidden = false;
+    infoClose.focus();
+  }
+  function closeInfo() { infoPanel.hidden = true; }
+  infoClose.addEventListener('click', closeInfo);
+  infoPanel.addEventListener('click', (e) => { if (e.target === infoPanel) closeInfo(); });
+
+  infoEdit.addEventListener('click', () => {
+    const ch = myChars.find((c) => c.id === infoId);
+    closeInfo();
+    if (!ch) return;
+    applyBrightTexts();
+    editingId = ch.id;
+    thanksEl.textContent = ch.name;
+    startDrawing(ch);
+  });
+
+  infoDel.addEventListener('click', () => {
+    myChars = myChars.filter((c) => c.id !== infoId);
+    saveChars();
+    renderCharacters();
+    renderPeople();
+    closeInfo();
+  });
+
+  // ===== 12. 누른 사람들 목록 (오른쪽 위 👥) =====
+  function renderPeople() {
+    peopleList.innerHTML = '';
+    myChars.slice().reverse().forEach((ch) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = ch.name;
+      b.addEventListener('click', () => openInfo(ch.id));
+      li.appendChild(b);
+      peopleList.appendChild(li);
+    });
+    peopleCount.textContent = myChars.length;
+  }
+  peopleBtn.addEventListener('click', () => {
+    peopleDrop.hidden = !peopleDrop.hidden || myChars.length === 0;
+    peopleBtn.setAttribute('aria-expanded', String(!peopleDrop.hidden));
+  });
+
+  // ===== 13. 서버 선택 (지구 버튼) =====
+  // 지금은 "내 서버"만 동작해요. 전체 서버·친구 방은 데이터베이스가 있어야 해요.
+  serverBtn.addEventListener('click', () => {
+    applyBrightTexts();
+    peopleDrop.hidden = true;
+    serverPanel.hidden = false;
+    $('serverClose').focus();
+  });
+  $('serverClose').addEventListener('click', () => { serverPanel.hidden = true; });
+  serverPanel.addEventListener('click', (e) => { if (e.target === serverPanel) serverPanel.hidden = true; });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (modal.classList.contains('open')) { closeModal(); redBtn.focus(); }
+    infoPanel.hidden = true;
+    serverPanel.hidden = true;
+    peopleDrop.hidden = true;
+  });
+
+  // ===== 14. 처음 열 때 =====
+  let savedLang = null;
+  try { savedLang = localStorage.getItem('lang'); } catch (e) {}
+  setLang(LANGS[savedLang] ? savedLang : detectLang(), false);
+  loadChars();
+  renderCharacters();
+  renderPeople();
+</script>
+</body>
+</html>
