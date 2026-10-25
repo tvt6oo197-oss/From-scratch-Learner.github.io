@@ -838,6 +838,7 @@
         <div id="imgBar" class="tools img-bar" hidden>
           <label class="check"><input id="traceCheck" type="checkbox" checked> <span id="traceText"></span></label>
           <button id="imgRemove" class="tool wide-tool" type="button">✕ <span id="imgRemoveText"></span></button>
+          <p id="photoNote" class="voice-msg" hidden></p>
         </div>
 
         <button id="doneBtn" class="pill-btn" type="button"></button>
@@ -909,6 +910,7 @@
         <p id="infoDesc" class="info-desc"></p>
         <div class="card-actions">
           <button id="infoPlay" class="small-btn" type="button" hidden></button>
+          <button id="infoSound" class="small-btn" type="button" hidden></button>
           <button id="infoEdit" class="small-btn" type="button"></button>
           <button id="infoDel" class="small-btn danger" type="button"></button>
           <button id="infoClose" class="small-btn" type="button"></button>
@@ -1134,6 +1136,21 @@
   };
   Object.keys(VOICE_TEXT).forEach((code) => Object.assign(LANGS[code], VOICE_TEXT[code]));
 
+  // 남의 캐릭터 소리 켜기/끄기, 사진 규칙 문장
+  const RULE_TEXT = {
+    en: { soundOn: '🔊 Turn sound on', soundOff: '🔇 Turn sound off', photoLocal: "Characters with a picture can't go to Everyone's server." },
+    ko: { soundOn: '🔊 소리 켜기', soundOff: '🔇 소리 끄기', photoLocal: '사진이 들어간 캐릭터는 전체 서버에 나갈 수 없어요.' },
+    ja: { soundOn: '🔊 音をオン', soundOff: '🔇 音をオフ', photoLocal: '画像入りのキャラはみんなのサーバーに出せません。' },
+    zh: { soundOn: '🔊 打开声音', soundOff: '🔇 关闭声音', photoLocal: '含有图片的角色不能进入公共服务器。' },
+    es: { soundOn: '🔊 Activar sonido', soundOff: '🔇 Silenciar', photoLocal: 'Los personajes con imagen no pueden ir al servidor de todos.' },
+    fr: { soundOn: '🔊 Activer le son', soundOff: '🔇 Couper le son', photoLocal: 'Les personnages avec une image ne peuvent pas aller sur le serveur de tous.' },
+    de: { soundOn: '🔊 Ton an', soundOff: '🔇 Ton aus', photoLocal: 'Figuren mit Bild können nicht auf den Server für alle.' },
+    ru: { soundOn: '🔊 Включить звук', soundOff: '🔇 Выключить звук', photoLocal: 'Персонажи с картинкой не попадут на общий сервер.' },
+    vi: { soundOn: '🔊 Bật âm thanh', soundOff: '🔇 Tắt âm thanh', photoLocal: 'Nhân vật có ảnh không thể lên máy chủ chung.' },
+    ar: { soundOn: '🔊 تشغيل الصوت', soundOff: '🔇 كتم الصوت', photoLocal: 'لا يمكن للشخصيات التي تحتوي على صورة الظهور في خادم الجميع.' }
+  };
+  Object.keys(RULE_TEXT).forEach((code) => Object.assign(LANGS[code], RULE_TEXT[code]));
+
   // ===== 2. 캐릭터 기본값 =====
   const DEFAULT_SIZE = 64;   // 처음 크기 (공은 56)
   const HOP_TIME = { slow: 1.1, normal: 0.8, fast: 0.5 };   // 한 번 튀는 데 걸리는 시간(초)
@@ -1161,6 +1178,22 @@
   const infoEdit = $('infoEdit'), infoDel = $('infoDel'), infoClose = $('infoClose'), infoPlay = $('infoPlay');
   const recBtn = $('recBtn'), playBtn = $('playBtn'), voiceClear = $('voiceClear');
   const voiceFile = $('voiceFile'), voiceMsg = $('voiceMsg');
+  const infoSound = $('infoSound'), photoNote = $('photoNote');
+
+  // 이 브라우저(방문자)를 구분하는 이름표. 나중에 전체 서버에서 "내 캐릭터"를 알아보는 데 써요.
+  let myId = null;
+  try { myId = localStorage.getItem('myId'); } catch (e) {}
+  if (!myId) {
+    myId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try { localStorage.setItem('myId', myId); } catch (e) {}
+  }
+
+  // 소리를 켜 둔 "남의 캐릭터" 목록 (기본은 모두 꺼짐)
+  let unmuted = new Set();
+  try { unmuted = new Set(JSON.parse(localStorage.getItem('unmuted') || '[]')); } catch (e) {}
+  function saveUnmuted() {
+    try { localStorage.setItem('unmuted', JSON.stringify([...unmuted])); } catch (e) {}
+  }
 
   let lang = 'en';                       // 지금 선택된 언어
   const T = () => LANGS[lang];           // 지금 언어의 문장들
@@ -1606,7 +1639,7 @@
     };
     reader.readAsDataURL(file);
   });
-  traceCheck.addEventListener('change', () => { refTrace = traceCheck.checked; composite(); });
+  traceCheck.addEventListener('change', () => { refTrace = traceCheck.checked; updateImgUI(); composite(); });
   imgRemove.addEventListener('click', () => {
     refImg = null; refData = null; refTrace = true;
     updateImgUI();
@@ -1615,6 +1648,9 @@
   function updateImgUI() {
     imgBar.hidden = !refData;
     traceCheck.checked = refTrace;
+    // 사진을 그림에 넣으면(따라 그리기용 해제) 전체 서버에 못 나간다고 알려 줘요
+    photoNote.textContent = T().photoLocal;
+    photoNote.hidden = !(refData && !refTrace);
   }
 
   // --- 완성 그림 만들기 ---
@@ -1746,7 +1782,9 @@
       size: chosen.size,
       hop: chosen.hop,
       roll: chosen.roll,
-      voice: voiceData
+      voice: voiceData,
+      owner: old && old.owner ? old.owner : myId,
+      usesPhoto: Boolean(refData && !refTrace)   // 사진이 그림에 들어갔는지 (전체 서버 금지)
     };
 
     if (old) myChars[myChars.indexOf(old)] = ch;
@@ -1908,8 +1946,9 @@
 
     const label = document.createElement('span');
     label.className = 'char-name';
-    // 목소리가 있으면 이름 앞에 🔊 (textContent를 써야 이상한 코드가 들어와도 안전해요)
-    label.textContent = (ch.voice ? '🔊 ' : '') + ch.name;
+    // 목소리가 있으면 이름 앞에 🔊(들림) 또는 🔇(꺼짐)
+    // (textContent를 써야 이상한 코드가 들어와도 안전해요)
+    label.textContent = (ch.voice ? (canHear(ch) ? '🔊 ' : '🔇 ') : '') + ch.name;
 
     hop.append(bar, img, label);
     track.append(shadow, hop);
@@ -1936,7 +1975,7 @@
     track.addEventListener('pointerup', () => {
       if (timer && Date.now() - downAt < 600) {
         const ch = myChars.find((c) => c.id === id);
-        if (ch && ch.voice) playVoice(ch.voice);
+        if (ch && ch.voice && canHear(ch)) playVoice(ch.voice);
       }
       stop();
     });
@@ -1946,9 +1985,19 @@
 
   // ===== 11. 캐릭터 정보 창 (이름·설명 + 더 그리기·삭제) =====
   let infoId = null;
-  // 지금은 내 서버라 모든 캐릭터가 내 것이에요.
-  // 나중에 전체 서버가 생기면, 남의 캐릭터는 보기만 하고 고칠 수 없게 할 거예요.
-  const isMine = (ch) => true;
+  // 내 캐릭터인지: 만든 사람 이름표(owner)가 내 이름표와 같으면 내 것
+  // 남의 캐릭터는 보기만 하고 고치거나 지울 수 없어요.
+  const isMine = (ch) => !ch.owner || ch.owner === myId;
+  // 소리 규칙: 내 캐릭터 소리는 기본으로 들리고, 남의 캐릭터 소리는 내가 켠 것만 들려요
+  const canHear = (ch) => isMine(ch) || unmuted.has(ch.id);
+  // 사진 규칙: 사진이 그림에 들어간 캐릭터는 전체 서버에 못 나가요 (문제 될 사진 방지)
+  const canGoGlobal = (ch) => !ch.usesPhoto;
+
+  function updateSoundButtons(ch) {
+    infoPlay.hidden = !(ch.voice && canHear(ch));
+    infoSound.hidden = isMine(ch) || !ch.voice;
+    infoSound.textContent = unmuted.has(ch.id) ? T().soundOff : T().soundOn;
+  }
 
   function openInfo(id) {
     const ch = myChars.find((c) => c.id === id);
@@ -1959,7 +2008,7 @@
     infoName.textContent = ch.name;
     infoDesc.textContent = ch.desc || T().noDesc;
     infoEdit.hidden = infoDel.hidden = !isMine(ch);
-    infoPlay.hidden = !ch.voice;
+    updateSoundButtons(ch);
     peopleDrop.hidden = true;
     infoPanel.hidden = false;
     infoClose.focus();
@@ -1967,7 +2016,17 @@
   function closeInfo() { infoPanel.hidden = true; }
   infoPlay.addEventListener('click', () => {
     const ch = myChars.find((c) => c.id === infoId);
-    if (ch) playVoice(ch.voice);
+    if (ch && canHear(ch)) playVoice(ch.voice);
+  });
+  // 남의 캐릭터 소리 켜기/끄기
+  infoSound.addEventListener('click', () => {
+    const ch = myChars.find((c) => c.id === infoId);
+    if (!ch) return;
+    if (unmuted.has(ch.id)) unmuted.delete(ch.id);
+    else unmuted.add(ch.id);
+    saveUnmuted();
+    updateSoundButtons(ch);
+    renderCharacters();   // 이름 앞 🔊/🔇 표시 바꾸기
   });
   infoClose.addEventListener('click', closeInfo);
   infoPanel.addEventListener('click', (e) => { if (e.target === infoPanel) closeInfo(); });
