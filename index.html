@@ -463,6 +463,24 @@
   }
   .seg button.active { background: #ff8fb1; color: #fff; box-shadow: 0 0 0 2px #ff8fb1; }
 
+  /* 목소리 줄 (녹음 · 파일 · 듣기 · 빼기) */
+  .voice-row { flex-wrap: wrap; }
+  .voice-btns { flex: 1; display: flex; gap: 6px; flex-wrap: wrap; }
+  .voice-btns button {
+    padding: 7px 10px;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 2px #ffd1e0;
+    color: #ff7aa2;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .voice-btns button.recording { background: #ff5c8a; color: #fff; box-shadow: 0 0 0 2px #ff5c8a; }
+  .voice-msg { width: 100%; font-size: 12px; color: #e7a3bd; text-align: start; }
+  .pill-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
   .name-input, .desc-input {
     width: min(84vw, 320px);
     margin-top: 4px;
@@ -850,6 +868,19 @@
           </div>
         </div>
 
+        <!-- 목소리: 짧게 탭하면 캐릭터가 이 소리를 내요 -->
+        <div class="opt-row voice-row">
+          <span id="voiceLabel"></span>
+          <div class="voice-btns">
+            <button id="recBtn" type="button"></button>
+            <button id="voiceFileBtn" type="button"></button>
+            <button id="playBtn" type="button" hidden></button>
+            <button id="voiceClear" type="button" hidden>✕</button>
+            <input id="voiceFile" type="file" accept="audio/*" hidden>
+          </div>
+          <p id="voiceMsg" class="voice-msg" hidden></p>
+        </div>
+
         <input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="off">
         <textarea id="descInput" class="desc-input" rows="2" maxlength="120"></textarea>
         <button id="okBtn" class="pill-btn" type="button"></button>
@@ -877,6 +908,7 @@
         <p id="infoName" class="info-name"></p>
         <p id="infoDesc" class="info-desc"></p>
         <div class="card-actions">
+          <button id="infoPlay" class="small-btn" type="button" hidden></button>
           <button id="infoEdit" class="small-btn" type="button"></button>
           <button id="infoDel" class="small-btn danger" type="button"></button>
           <button id="infoClose" class="small-btn" type="button"></button>
@@ -910,6 +942,28 @@
   </section>
 
 <script>
+  // ===== 0. 방문자 통계 (GoatCounter) =====
+  // goatcounter.com에서 가입할 때 정한 "코드"를 아래에 넣으면 통계가 켜져요.
+  // 예: 코드가 'nurujima'면 → https://nurujima.goatcounter.com 에서 통계를 볼 수 있어요.
+  // 비워 두면 아무것도 세지 않아요.
+  const GOATCOUNTER = '';
+
+  if (GOATCOUNTER) {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.dataset.goatcounter = 'https://' + GOATCOUNTER + '.goatcounter.com/count';
+    document.head.appendChild(s);
+  }
+  // 방문 말고도 "버튼을 눌렀다" 같은 행동을 따로 세요 (통계 화면에 이 이름으로 보여요)
+  function track(name) {
+    try {
+      if (window.goatcounter && window.goatcounter.count) {
+        window.goatcounter.count({ path: name, title: name, event: true });
+      }
+    } catch (e) {}
+  }
+
   // ===== 1. 언어별 문장 =====
   // name: 언어 선택 목록에 보일 이름. 맨 위(English)가 기본 언어예요.
   const LANGS = {
@@ -1055,6 +1109,31 @@
       room: 'غرفة الأصدقاء (رمز · رابط)', needDb: 'يُفتح بعد ربط قاعدة البيانات' }
   };
 
+  // 목소리 기능 문장 (위 LANGS에 합쳐져요)
+  const VOICE_TEXT = {
+    en: { voice: 'Voice', rec: '● Record', stop: '■ Stop', play: '▶ Play', file: '📁 File',
+          tooLong: 'Please use a sound under 5 seconds.', micDenied: "Can't use the microphone. Please allow it in your browser.", playVoice: '▶ Voice' },
+    ko: { voice: '목소리', rec: '● 녹음', stop: '■ 멈춤', play: '▶ 듣기', file: '📁 파일',
+          tooLong: '5초 이내의 짧은 소리만 넣을 수 있어요.', micDenied: '마이크를 쓸 수 없어요. 브라우저에서 마이크를 허용해 주세요.', playVoice: '▶ 목소리' },
+    ja: { voice: '声', rec: '● 録音', stop: '■ 停止', play: '▶ 再生', file: '📁 ファイル',
+          tooLong: '5秒以内の短い音にしてください。', micDenied: 'マイクが使えません。ブラウザでマイクを許可してください。', playVoice: '▶ 声' },
+    zh: { voice: '声音', rec: '● 录音', stop: '■ 停止', play: '▶ 播放', file: '📁 文件',
+          tooLong: '请使用5秒以内的短声音。', micDenied: '无法使用麦克风，请在浏览器中允许麦克风。', playVoice: '▶ 声音' },
+    es: { voice: 'Voz', rec: '● Grabar', stop: '■ Parar', play: '▶ Escuchar', file: '📁 Archivo',
+          tooLong: 'Usa un sonido de menos de 5 segundos.', micDenied: 'No se puede usar el micrófono. Permítelo en tu navegador.', playVoice: '▶ Voz' },
+    fr: { voice: 'Voix', rec: '● Enregistrer', stop: '■ Arrêter', play: '▶ Écouter', file: '📁 Fichier',
+          tooLong: 'Utilisez un son de moins de 5 secondes.', micDenied: "Impossible d'utiliser le micro. Autorisez-le dans votre navigateur.", playVoice: '▶ Voix' },
+    de: { voice: 'Stimme', rec: '● Aufnehmen', stop: '■ Stopp', play: '▶ Abspielen', file: '📁 Datei',
+          tooLong: 'Bitte einen Ton unter 5 Sekunden verwenden.', micDenied: 'Mikrofon nicht verfügbar. Bitte im Browser erlauben.', playVoice: '▶ Stimme' },
+    ru: { voice: 'Голос', rec: '● Запись', stop: '■ Стоп', play: '▶ Слушать', file: '📁 Файл',
+          tooLong: 'Используйте звук короче 5 секунд.', micDenied: 'Микрофон недоступен. Разрешите его в браузере.', playVoice: '▶ Голос' },
+    vi: { voice: 'Giọng nói', rec: '● Ghi âm', stop: '■ Dừng', play: '▶ Nghe', file: '📁 Tệp',
+          tooLong: 'Hãy dùng âm thanh dưới 5 giây.', micDenied: 'Không dùng được micro. Hãy cho phép trong trình duyệt.', playVoice: '▶ Giọng' },
+    ar: { voice: 'الصوت', rec: '● تسجيل', stop: '■ إيقاف', play: '▶ استماع', file: '📁 ملف',
+          tooLong: 'استخدم صوتًا أقل من 5 ثوانٍ.', micDenied: 'لا يمكن استخدام الميكروفون. اسمح به في المتصفح.', playVoice: '▶ الصوت' }
+  };
+  Object.keys(VOICE_TEXT).forEach((code) => Object.assign(LANGS[code], VOICE_TEXT[code]));
+
   // ===== 2. 캐릭터 기본값 =====
   const DEFAULT_SIZE = 64;   // 처음 크기 (공은 56)
   const HOP_TIME = { slow: 1.1, normal: 0.8, fast: 0.5 };   // 한 번 튀는 데 걸리는 시간(초)
@@ -1079,7 +1158,9 @@
   const nameInput = $('nameInput'), descInput = $('descInput'), okBtn = $('okBtn');
   const charactersEl = $('characters');
   const infoPanel = $('infoPanel'), infoImg = $('infoImg'), infoName = $('infoName'), infoDesc = $('infoDesc');
-  const infoEdit = $('infoEdit'), infoDel = $('infoDel'), infoClose = $('infoClose');
+  const infoEdit = $('infoEdit'), infoDel = $('infoDel'), infoClose = $('infoClose'), infoPlay = $('infoPlay');
+  const recBtn = $('recBtn'), playBtn = $('playBtn'), voiceClear = $('voiceClear');
+  const voiceFile = $('voiceFile'), voiceMsg = $('voiceMsg');
 
   let lang = 'en';                       // 지금 선택된 언어
   const T = () => LANGS[lang];           // 지금 언어의 문장들
@@ -1152,10 +1233,10 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  redBtn.addEventListener('click', openModal);
-  noBtn.addEventListener('click', () => { closeModal(); redBtn.focus(); });
+  redBtn.addEventListener('click', () => { track('red-button'); openModal(); });
+  noBtn.addEventListener('click', () => { track('press-no'); closeModal(); redBtn.focus(); });
   modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(); redBtn.focus(); } });
-  yesBtn.addEventListener('click', () => pressNow(yesBtn));
+  yesBtn.addEventListener('click', () => { track('press-yes'); pressNow(yesBtn); });
 
   function pressNow(fromEl) {
     applyBrightTexts();
@@ -1197,6 +1278,11 @@
     $('roomName').textContent = s.room;
     document.querySelectorAll('.need-db').forEach((el) => { el.textContent = s.needDb; });
     $('serverClose').textContent = s.close;
+    $('voiceLabel').textContent = s.voice;
+    recBtn.textContent = s.rec;
+    $('voiceFileBtn').textContent = s.file;
+    playBtn.textContent = s.play;
+    infoPlay.textContent = s.playVoice;
   }
 
   function openBright(fromEl) {
@@ -1227,6 +1313,7 @@
   // 단계 바꾸기: 'draw'(그리기) → 'name'(설정·이름) → 'done'(완성)
   function setStage(stage) {
     bright.dataset.stage = stage;
+    if (stage !== 'name') stopRec();   // 녹음 중에 다른 단계로 가면 녹음 멈추기
     if (stage === 'draw') resizePad();
   }
 
@@ -1606,6 +1693,8 @@
     updatePreviewSize();
     nameInput.value = old ? old.name : '';
     descInput.value = old ? (old.desc || '') : '';
+    setVoice(old ? old.voice || null : null);
+    voiceMsg.hidden = true;
     setStage('name');
     setTimeout(() => nameInput.focus(), 100);
   });
@@ -1656,11 +1745,12 @@
       refTrace,
       size: chosen.size,
       hop: chosen.hop,
-      roll: chosen.roll
+      roll: chosen.roll,
+      voice: voiceData
     };
 
     if (old) myChars[myChars.indexOf(old)] = ch;
-    else myChars.push(ch);
+    else { myChars.push(ch); track('character-made'); }
 
     saveChars();
     renderCharacters();
@@ -1671,6 +1761,101 @@
   }
   okBtn.addEventListener('click', confirmName);
   nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') descInput.focus(); });
+
+  // ===== 8-1. 목소리 (녹음하거나 파일 넣기, 5초까지) =====
+  const MAX_VOICE_SEC = 5;
+  let voiceData = null;              // 소리를 글자로 바꿔 저장한 것
+  let recorder = null, recChunks = [], recTimer = null, recStart = 0;
+  let currentAudio = null;
+
+  function setVoice(data) {
+    voiceData = data;
+    playBtn.hidden = voiceClear.hidden = !data;
+  }
+  function showVoiceMsg(text) {
+    voiceMsg.textContent = text;
+    voiceMsg.hidden = false;
+  }
+  function playVoice(data) {
+    if (!data) return;
+    if (currentAudio) currentAudio.pause();
+    currentAudio = new Audio(data);
+    currentAudio.play().catch(() => {});
+  }
+  function blobToDataURL(blob, done) {
+    const r = new FileReader();
+    r.onload = () => done(r.result);
+    r.readAsDataURL(blob);
+  }
+  function setRecording(on) {
+    recBtn.classList.toggle('recording', on);
+    recBtn.textContent = on ? T().stop + ' 0' : T().rec;
+    okBtn.disabled = on;             // 녹음 중에는 확인을 못 누르게
+  }
+
+  async function startRec() {
+    voiceMsg.hidden = true;
+    if (!navigator.mediaDevices || !window.MediaRecorder) { showVoiceMsg(T().micDenied); return; }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      showVoiceMsg(T().micDenied);
+      return;
+    }
+    recChunks = [];
+    try {
+      recorder = new MediaRecorder(stream, { audioBitsPerSecond: 32000 }); // 작게 저장
+    } catch (e) {
+      recorder = new MediaRecorder(stream);
+    }
+    recorder.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      clearInterval(recTimer);
+      setRecording(false);
+      const blob = new Blob(recChunks, { type: recorder.mimeType || 'audio/webm' });
+      if (blob.size) blobToDataURL(blob, setVoice);
+    };
+    recorder.start();
+    recStart = Date.now();
+    setRecording(true);
+    recTimer = setInterval(() => {
+      const sec = (Date.now() - recStart) / 1000;
+      recBtn.textContent = T().stop + ' ' + Math.min(MAX_VOICE_SEC, Math.floor(sec));
+      if (sec >= MAX_VOICE_SEC) stopRec();   // 5초가 되면 자동으로 멈춰요
+    }, 200);
+  }
+  function stopRec() {
+    if (recorder && recorder.state === 'recording') recorder.stop();
+  }
+
+  recBtn.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') stopRec();
+    else startRec();
+  });
+  playBtn.addEventListener('click', () => playVoice(voiceData));
+  voiceClear.addEventListener('click', () => { setVoice(null); voiceMsg.hidden = true; });
+
+  // 소리 파일 넣기: 너무 크거나 5초가 넘으면 거절
+  $('voiceFileBtn').addEventListener('click', () => voiceFile.click());
+  voiceFile.addEventListener('change', () => {
+    const file = voiceFile.files && voiceFile.files[0];
+    voiceFile.value = '';
+    voiceMsg.hidden = true;
+    if (!file) return;
+    if (file.size > 400 * 1024) { showVoiceMsg(T().tooLong); return; }
+    blobToDataURL(file, (data) => {
+      const probe = new Audio();
+      probe.preload = 'metadata';
+      probe.onloadedmetadata = () => {
+        if (isFinite(probe.duration) && probe.duration > MAX_VOICE_SEC + 0.5) showVoiceMsg(T().tooLong);
+        else setVoice(data);
+      };
+      probe.onerror = () => showVoiceMsg(T().tooLong);
+      probe.src = data;
+    });
+  });
 
   // ===== 9. 내 캐릭터 저장 (지금은 이 브라우저 안에만 = "내 서버") =====
   let myChars = [];
@@ -1723,7 +1908,8 @@
 
     const label = document.createElement('span');
     label.className = 'char-name';
-    label.textContent = ch.name; // textContent를 써야 이상한 코드가 들어와도 안전해요
+    // 목소리가 있으면 이름 앞에 🔊 (textContent를 써야 이상한 코드가 들어와도 안전해요)
+    label.textContent = (ch.voice ? '🔊 ' : '') + ch.name;
 
     hop.append(bar, img, label);
     track.append(shadow, hop);
@@ -1731,9 +1917,11 @@
     return track;
   }
 
+  // 짧게 탭하면 목소리가 나오고,
   // 누르면 멈추고, 3초 동안 계속 누르면 그 캐릭터의 이름·설명 창이 열려요
   function attachHold(track, id) {
     let timer = null;
+    let downAt = 0;
     const stop = () => {
       clearTimeout(timer);
       timer = null;
@@ -1741,10 +1929,18 @@
     };
     track.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      downAt = Date.now();
       track.classList.add('paused', 'holding');
       timer = setTimeout(() => { stop(); openInfo(id); }, 3000);
     });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => track.addEventListener(ev, stop));
+    track.addEventListener('pointerup', () => {
+      if (timer && Date.now() - downAt < 600) {
+        const ch = myChars.find((c) => c.id === id);
+        if (ch && ch.voice) playVoice(ch.voice);
+      }
+      stop();
+    });
+    ['pointerleave', 'pointercancel'].forEach((ev) => track.addEventListener(ev, stop));
     track.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
@@ -1763,11 +1959,16 @@
     infoName.textContent = ch.name;
     infoDesc.textContent = ch.desc || T().noDesc;
     infoEdit.hidden = infoDel.hidden = !isMine(ch);
+    infoPlay.hidden = !ch.voice;
     peopleDrop.hidden = true;
     infoPanel.hidden = false;
     infoClose.focus();
   }
   function closeInfo() { infoPanel.hidden = true; }
+  infoPlay.addEventListener('click', () => {
+    const ch = myChars.find((c) => c.id === infoId);
+    if (ch) playVoice(ch.voice);
+  });
   infoClose.addEventListener('click', closeInfo);
   infoPanel.addEventListener('click', (e) => { if (e.target === infoPanel) closeInfo(); });
 
