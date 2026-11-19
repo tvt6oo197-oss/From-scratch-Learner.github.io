@@ -258,6 +258,65 @@ input{font-family:inherit}
 .pad[data-lane="2"]{--pc:var(--lane2);--pc-glow:rgba(141,255,214,.55);--pc-bg:rgba(141,255,214,.17);--pc-bg2:rgba(141,255,214,.38);--pc-line:rgba(141,255,214,.3)}
 .pad[data-lane="3"]{--pc:var(--lane3);--pc-glow:rgba(255,170,216,.55);--pc-bg:rgba(255,170,216,.19);--pc-bg2:rgba(255,170,216,.4);--pc-line:rgba(255,170,216,.32)}
 
+/* ---------- settings (⚙) ---------- */
+.round-btn svg{width:15px;height:15px;display:block}
+.modal-gear{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:11px;z-index:2}
+.gear-btn{width:38px;height:38px;border-radius:13px;margin-left:2px;align-self:flex-start}
+.modal.set-modal{
+  width:min(660px,100%);align-items:stretch;text-align:left;gap:11px;
+  padding:clamp(15px,2.6vw,24px);
+}
+.set-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.set-head h2{font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:8px}
+.set-head h2 i{font-style:normal;font-size:13px;opacity:.6}
+.set-close{
+  pointer-events:auto;flex:0 0 auto;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  font-size:13px;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--stroke);
+  transition:transform .12s,background .2s;
+}
+.set-close:active{transform:scale(.93);background:rgba(60,38,110,.7)}
+.set-body{display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:14px;align-items:stretch}
+.set-sec{display:flex;flex-direction:column;gap:7px;min-width:0}
+.set-sec h3{margin:0;font-size:8.5px;letter-spacing:.24em;color:var(--dim2);font-weight:700;text-transform:uppercase}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.key-btn{
+  pointer-events:auto;position:relative;min-height:56px;padding:7px 2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border-radius:13px;border:1px solid var(--stroke);background:rgba(10,5,22,.55);
+  transition:border-color .16s,box-shadow .16s,background .16s;
+}
+.key-btn small{font-size:6.5px;letter-spacing:.12em;color:var(--dim2);font-weight:700;line-height:1}
+.key-btn b{font-family:var(--mono);font-size:17px;font-weight:800;line-height:1;color:var(--lc,#fff);text-shadow:0 0 14px var(--lg,rgba(255,255,255,.3))}
+.key-btn[data-lane="0"]{--lc:var(--lane0);--lg:rgba(198,163,255,.6)}
+.key-btn[data-lane="1"]{--lc:var(--lane1);--lg:rgba(120,233,255,.55)}
+.key-btn[data-lane="2"]{--lc:var(--lane2);--lg:rgba(141,255,214,.55)}
+.key-btn[data-lane="3"]{--lc:var(--lane3);--lg:rgba(255,170,216,.55)}
+.key-btn.listening{border-color:var(--lc);background:rgba(52,32,96,.55);animation:keyListen 1.15s ease-in-out infinite}
+.key-btn.listening b{font-family:var(--font);font-size:9.5px;letter-spacing:.02em;font-weight:700;text-align:center;line-height:1.25;white-space:pre-line}
+@keyframes keyListen{
+  0%,100%{box-shadow:0 0 0 1px var(--lc),0 0 18px -8px var(--lc)}
+  50%{box-shadow:0 0 0 2px var(--lc),0 0 30px -4px var(--lc)}
+}
+.key-foot{display:flex;align-items:center;gap:8px;min-height:22px;margin-top:auto}
+.key-note{font-size:8.5px;letter-spacing:.02em;color:var(--gold);line-height:1.35;flex:1;min-width:0;opacity:0;transition:opacity .2s}
+.key-note.on{opacity:1}
+.mini-btn{
+  pointer-events:auto;flex:0 0 auto;margin-left:auto;padding:6px 10px;border-radius:9px;
+  font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--dim);
+  background:rgba(255,255,255,.05);border:1px solid var(--stroke);transition:transform .12s,background .2s;
+}
+.mini-btn:active{transform:scale(.95);background:rgba(60,38,110,.65)}
+.set-preview{
+  border-radius:14px;border:1px solid var(--stroke-2);background:rgba(7,4,16,.55);
+  padding:7px 8px 6px;display:flex;flex-direction:column;gap:5px;min-width:0;
+}
+#hitPreview{display:block;width:100%;height:170px;border-radius:9px;touch-action:none}
+.hit-ends{display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:.09em;color:var(--dim2);margin-top:-2px}
+.set-hint{margin:0;font-size:9px;line-height:1.45;color:var(--dim2);letter-spacing:.015em}
+.set-done{width:100%;margin-top:1px}
+.set-done.start-btn{padding:12px}
+#app[data-settings="1"] .pads{display:none}
+
 /* ---------- overlays ---------- */
 .overlay{
   position:absolute;inset:0;z-index:10;
@@ -561,6 +620,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
 
 /* ---------- modal (pause / result) ---------- */
 .modal{
+  position:relative;
   width:min(430px,100%);margin:auto;
   border-radius:24px;padding:clamp(20px,3.4vw,30px);
   background:linear-gradient(165deg,rgba(41,26,78,.72),rgba(14,8,30,.88));
@@ -705,6 +765,25 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   .sync-delta{font-size:10px}
   .start-btn{padding:14px}
 }
+@media (max-width:660px){
+  .set-body{grid-template-columns:1fr;gap:11px}
+  #hitPreview{height:142px}
+}
+@media (max-width:560px){
+  .gear-btn{position:absolute;top:calc(11px + env(safe-area-inset-top));right:11px;z-index:2}
+}
+@media (max-height:540px){
+  .modal.set-modal{padding:11px 14px;gap:8px;border-radius:18px}
+  .set-body{gap:10px}
+  .set-sec{gap:5px}
+  .key-btn{min-height:47px;padding:5px 2px}
+  .key-btn b{font-size:15px}
+  #hitPreview{height:112px}
+  #settingsHint{display:none}
+  .set-hint{font-size:8px}
+  .set-done.start-btn{padding:9px}
+  .set-head h2{font-size:13px}
+}
 @media (max-height:680px){
   .brand{gap:10px}
   .panel{gap:9px;padding:12px}
@@ -738,6 +817,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
       </div>
       <div class="hud-right">
+        <button id="settingsHud" class="round-btn" data-i18n-aria="ariaSettings" aria-label="설정">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.48.48 0 0 0-.58-.21l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.48.48 0 0 0-.58.21L2.3 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.42 14.5a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.58.21l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08.47 0 .58-.21l1.92-3.32a.48.48 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+        </button>
         <button id="restartHud" class="round-btn" data-i18n-aria="ariaRestart" aria-label="다시 시작">⟲</button>
         <button id="pauseBtn" class="round-btn" data-i18n-aria="ariaPause" aria-label="일시정지">❚❚</button>
       </div>
@@ -776,6 +858,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
           <button data-lang="zh">ZH</button>
           <button data-lang="es">ES</button>
         </div>
+        <button id="settingsTitle" class="round-btn gear-btn" data-i18n-aria="ariaSettings" aria-label="설정">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.48.48 0 0 0-.58-.21l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.48.48 0 0 0-.58.21L2.3 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.42 14.5a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.58.21l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08.47 0 .58-.21l1.92-3.32a.48.48 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+        </button>
       </header>
 
       <section class="panel">
@@ -847,13 +932,16 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <button id="startBtn" class="start-btn"><span data-i18n="start">START</span><small>ENTER</small></button>
       </section>
 
-      <footer class="title-foot" data-i18n="foot">D · F · J · K &nbsp;|&nbsp; 모바일은 하단 4패드 &nbsp;|&nbsp; Space 일시정지</footer>
+      <footer class="title-foot"><span id="footKeys">D · F · J · K</span> &nbsp;|&nbsp; <span data-i18n="footRest">모바일은 하단 4패드 &nbsp;|&nbsp; Space 일시정지</span></footer>
     </div>
   </div>
 
   <!-- ============ PAUSE ============ -->
   <div id="pauseScreen" class="overlay hidden">
     <div class="modal">
+      <button id="settingsPause" class="round-btn modal-gear" data-i18n-aria="ariaSettings" aria-label="설정">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.48.48 0 0 0-.58-.21l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.48.48 0 0 0-.58.21L2.3 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.42 14.5a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.58.21l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08.47 0 .58-.21l1.92-3.32a.48.48 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+      </button>
       <h2 data-i18n="pauseTitle">일시정지</h2>
       <p id="pauseInfo">—</p>
       <div class="modal-btns">
@@ -862,6 +950,42 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <button id="quitBtn" class="ghost-btn" data-i18n="songSelect">곡 선택</button>
       </div>
       <p class="tiny-hint" data-i18n="escHint">ESC 로도 계속할 수 있어요</p>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div id="settingsScreen" class="overlay hidden" role="dialog" aria-modal="true" data-i18n-aria="ariaSettings" aria-label="설정">
+    <div class="modal set-modal">
+      <div class="set-head">
+        <h2><i>⚙</i><span data-i18n="settingsTitle">설정</span></h2>
+        <button id="setClose" class="set-close" data-i18n-aria="ariaClose" aria-label="닫기">✕</button>
+      </div>
+      <div class="set-body">
+        <section class="set-sec">
+          <h3 data-i18n="keyBinds">노트 키</h3>
+          <div class="keys" id="keyGrid">
+            <button class="key-btn" data-lane="0"><small>L1</small><b>D</b></button>
+            <button class="key-btn" data-lane="1"><small>L2</small><b>F</b></button>
+            <button class="key-btn" data-lane="2"><small>L3</small><b>J</b></button>
+            <button class="key-btn" data-lane="3"><small>L4</small><b>K</b></button>
+          </div>
+          <p class="set-hint" data-i18n="keyHint">버튼을 누른 뒤 원하는 키를 누르면 바로 바뀌어요</p>
+          <div class="key-foot">
+            <span class="key-note" id="keyNote"></span>
+            <button id="keyReset" class="mini-btn" data-i18n="keyReset">기본값</button>
+          </div>
+        </section>
+        <section class="set-sec">
+          <h3 data-i18n="hitLine">판정선 위치</h3>
+          <div class="set-preview">
+            <canvas id="hitPreview"></canvas>
+            <input id="hitRange" type="range" min="0" max="100" step="1" value="97" data-i18n-aria="hitLine" aria-label="판정선 위치">
+            <div class="hit-ends"><span data-i18n="hitFar">↑ 위 · 멀리</span><span data-i18n="hitNear">아래 · 키 가까이 ↓</span></div>
+          </div>
+        </section>
+      </div>
+      <p class="set-hint" data-i18n="settingsHint">게임 중에 열면 자동으로 일시정지돼요</p>
+      <button id="setDone" class="start-btn set-done"><span data-i18n="done">완료</span><small>ESC</small></button>
     </div>
   </div>
 
@@ -1756,7 +1880,22 @@ const I18N = {
     ariaRestart: '다시 시작',
     ariaPause: '일시정지',
     start: 'START',
-    foot: 'D · F · J · K  |  모바일은 하단 4패드  |  Space 일시정지',
+
+    footRest: '모바일은 하단 4패드  |  Space 일시정지',
+    settingsTitle: '설정',
+    keyBinds: '노트 키',
+    keyHint: '버튼을 누른 뒤 원하는 키를 누르면 바로 바뀌어요',
+    keyListening: '키 입력…',
+    keySwap: '{k} 키는 {n}번 레인에 있어요 · 서로 바꿨어요',
+    keyReset: '기본값',
+    keyResetDone: 'D F J K 기본 키로 되돌렸어요',
+    hitLine: '판정선 위치',
+    hitFar: '↑ 위 · 멀리',
+    hitNear: '아래 · 키 가까이 ↓',
+    settingsHint: '게임 중에 열면 자동으로 일시정지돼요',
+    done: '완료',
+    ariaSettings: '설정',
+    ariaClose: '닫기',
     pauseTitle: '일시정지',
     resume: '계속하기',
     restart: '처음부터',
@@ -1811,7 +1950,22 @@ const I18N = {
     ariaRestart: 'Restart',
     ariaPause: 'Pause',
     start: 'START',
-    foot: 'D · F · J · K  |  4 touch pads on mobile  |  Space to pause',
+
+    footRest: '4 touch pads on mobile  |  Space to pause',
+    settingsTitle: 'SETTINGS',
+    keyBinds: 'LANE KEYS',
+    keyHint: 'Tap a key, then press the key you want',
+    keyListening: 'PRESS…',
+    keySwap: '{k} was on lane {n} · swapped',
+    keyReset: 'DEFAULT',
+    keyResetDone: 'Back to D F J K',
+    hitLine: 'PERFECT LINE',
+    hitFar: '↑ Higher · far',
+    hitNear: 'Lower · near keys ↓',
+    settingsHint: 'Opening it mid-game pauses for you',
+    done: 'DONE',
+    ariaSettings: 'Settings',
+    ariaClose: 'Close',
     pauseTitle: 'PAUSED',
     resume: 'RESUME',
     restart: 'RESTART',
@@ -1866,7 +2020,22 @@ const I18N = {
     ariaRestart: 'やり直す',
     ariaPause: '一時停止',
     start: 'START',
-    foot: 'D · F · J · K  |  モバイルは下の4パッド  |  Space で一時停止',
+
+    footRest: 'モバイルは下の4パッド  |  Space で一時停止',
+    settingsTitle: '設定',
+    keyBinds: 'ノートキー',
+    keyHint: 'ボタンを押してから、使いたいキーを押してください',
+    keyListening: 'キー入力…',
+    keySwap: '{k} は {n} 番レーンで使用中 · 入れ替えました',
+    keyReset: '既定値',
+    keyResetDone: 'D F J K に戻しました',
+    hitLine: '判定線の位置',
+    hitFar: '↑ 上・遠く',
+    hitNear: '下・キーの近く ↓',
+    settingsHint: 'プレイ中に開くと自動で一時停止します',
+    done: '完了',
+    ariaSettings: '設定',
+    ariaClose: '閉じる',
     pauseTitle: '一時停止',
     resume: '再開する',
     restart: '最初から',
@@ -1921,7 +2090,22 @@ const I18N = {
     ariaRestart: '重新开始',
     ariaPause: '暂停',
     start: 'START',
-    foot: 'D · F · J · K  |  手机用下方 4 个按键  |  Space 暂停',
+
+    footRest: '手机用下方 4 个按键  |  Space 暂停',
+    settingsTitle: '设置',
+    keyBinds: '音符按键',
+    keyHint: '先点按钮，再按你想用的键',
+    keyListening: '按键…',
+    keySwap: '{k} 已在第 {n} 轨使用 · 已互换',
+    keyReset: '默认',
+    keyResetDone: '已恢复 D F J K',
+    hitLine: '判定线位置',
+    hitFar: '↑ 上 · 远',
+    hitNear: '下 · 靠近按键 ↓',
+    settingsHint: '游戏中打开会自动暂停',
+    done: '完成',
+    ariaSettings: '设置',
+    ariaClose: '关闭',
     pauseTitle: '已暂停',
     resume: '继续',
     restart: '重新开始',
@@ -1976,7 +2160,22 @@ const I18N = {
     ariaRestart: 'Reiniciar',
     ariaPause: 'Pausa',
     start: 'START',
-    foot: 'D · F · J · K  |  4 pads en móvil  |  Space pausa',
+
+    footRest: '4 pads en móvil  |  Space pausa',
+    settingsTitle: 'AJUSTES',
+    keyBinds: 'TECLAS DE CARRIL',
+    keyHint: 'Toca una tecla y luego pulsa la que quieras',
+    keyListening: 'PULSA…',
+    keySwap: '{k} estaba en el carril {n} · cambiadas',
+    keyReset: 'DEFECTO',
+    keyResetDone: 'Vuelto a D F J K',
+    hitLine: 'LÍNEA PERFECT',
+    hitFar: '↑ Arriba · lejos',
+    hitNear: 'Abajo · junto a las teclas ↓',
+    settingsHint: 'Se pausa solo si lo abres en partida',
+    done: 'LISTO',
+    ariaSettings: 'Ajustes',
+    ariaClose: 'Cerrar',
     pauseTitle: 'EN PAUSA',
     resume: 'CONTINUAR',
     restart: 'REINICIAR',
@@ -2070,6 +2269,11 @@ function diffName(d) {
 /* ============================ 3D SCENE ============================ */
 const LANE_X = [-3.45, -1.15, 1.15, 3.45];
 const LANE_W = 2.3;
+/* 판정선(퍼펙트 라인)의 하이웨이 위 위치 — 설정에서 실시간 조절 */
+const HIT_Z_MIN = -9.0;   /* 더 멀리(화면 위) */
+const HIT_Z_MAX = 0.25;   /* 키 패드 쪽(화면 아래) */
+const HIT_Z_DEF = 0;      /* 기본: 패드 바로 위 */
+let HIT_Z = HIT_Z_DEF;
 const NOTE_Y = 1.02;
 const SPAWN_Z = -66;
 const MASCOT_Z = -26;
@@ -2450,6 +2654,7 @@ function onResize() {
   updateViewUniforms();
   updatePixelRes();
   resizeSunset();
+  alignPads();
 }
 
 /* ---------------------------- world ---------------------------- */
@@ -2534,6 +2739,7 @@ function buildWorld() {
       uL: { value: LANE_HEX.map((h) => new THREE.Color(h)) },
       uBase: { value: new THREE.Color(0x04030a) },
       uPixel: { value: 0 },
+      uHitZ: { value: HIT_Z },
     },
     vertexShader: `
       varying vec3 vW;
@@ -2544,7 +2750,7 @@ function buildWorld() {
       }
     `,
     fragmentShader: `
-      uniform float uTime, uBeat, uEnergy, uPixel;
+      uniform float uTime, uBeat, uEnergy, uPixel, uHitZ;
       uniform vec3 uL[4];
       uniform vec3 uBase;
       varying vec3 vW;
@@ -2591,7 +2797,7 @@ function buildWorld() {
         col += lc * scan * (0.02 + 0.07 * uEnergy) * fade;
 
         /* 히트존 앞 밝기 */
-        col += lc * exp(-pow(z * 0.11, 2.0)) * 0.05 * fade * (0.5 + uBeat);
+        col += lc * exp(-pow((z - uHitZ) * 0.11, 2.0)) * 0.05 * fade * (0.5 + uBeat);
 
         if (uPixel > 0.001) {
           /* ---------- 도트 노을 바닷가: 픽셀 보드워크 · 바다 ---------- */
@@ -2676,8 +2882,9 @@ function buildWorld() {
     new THREE.BoxGeometry(10.4, 0.03, 0.1),
     new THREE.MeshBasicMaterial({ color: 0xcfe3ff, transparent: true, opacity: 0.6 })
   );
-  bar.position.set(0, 0.025, 0);
+  bar.position.set(0, 0.025, HIT_Z);
   scene.add(bar);
+  SC.hitBar = bar;
 
   /* 히트존 바닥 발광 띠 */
   const zoneMat = new THREE.MeshBasicMaterial({
@@ -2686,7 +2893,7 @@ function buildWorld() {
   });
   const zone = new THREE.Mesh(new THREE.PlaneGeometry(10.3, 1.15), zoneMat);
   zone.rotation.x = -Math.PI / 2;
-  zone.position.set(0, 0.014, -0.58);
+  zone.position.set(0, 0.014, HIT_Z - 0.58);
   scene.add(zone);
   SC.zone = { mesh: zone, mat: zoneMat };
 
@@ -2701,7 +2908,7 @@ function buildWorld() {
       new THREE.BoxGeometry(1.98, 0.085, 0.07),
       new THREE.MeshBasicMaterial({ color: LANE_HEX[i], transparent: true, opacity: 0.85 })
     );
-    slot.position.set(x, NOTE_Y, 0);
+    slot.position.set(x, NOTE_Y, HIT_Z);
     scene.add(slot);
     SC.slots = SC.slots || [];
     SC.slots.push({ mesh: slot, mat: slot.material });
@@ -2712,12 +2919,12 @@ function buildWorld() {
     });
     const glow = new THREE.Sprite(glowMat);
     glow.scale.set(2.4, 2.4, 1);
-    glow.position.set(x, NOTE_Y, -0.12);
+    glow.position.set(x, NOTE_Y, HIT_Z - 0.12);
     scene.add(glow);
     SC.ringGlow.push({ sp: glow, mat: glowMat });
 
     const light = new THREE.PointLight(LANE_HEX[i], 3.0, 16, 2);
-    light.position.set(x, 1.7, -1.2);
+    light.position.set(x, 1.7, HIT_Z - 1.2);
     scene.add(light);
     SC.laneLights.push({ light, base: 3.0 });
   }
@@ -3081,6 +3288,8 @@ const G = {
   auto: false,
   ended: false,
   presses: 0,
+  settings: false,
+  settingsFrom: 'title',
 };
 
 const MUSIC = {
@@ -3455,6 +3664,7 @@ function applyLang(code, opts) {
   SYNC.syncUI();
   const fw = $('#feverWord');
   if (fw) fw.textContent = t(G.fever ? 'feverTime' : 'fever');
+  refreshSettingsTexts();
   if (G.screen === 'play' || G.screen === 'pause' || G.screen === 'result') {
     const song = SONGS[G.songIndex];
     const hd = $('#hudDiff');
@@ -3481,6 +3691,9 @@ function boot() {
   buildSongList();
   bindUI();
   loadPrefs();
+  rebuildKeyLane();
+  applyHitZ(HIT_Z, { save: false });
+  alignPads();
   applyLang(LANG.cur, { silent: true });
   window.__pickleBooted = true;
   const b = $('#boot');
@@ -3547,6 +3760,7 @@ function savePrefs() {
   try {
     localStorage.setItem('pickle-rhythm-v1', JSON.stringify({
       song: G.songIndex, diff: G.diff, fun: G.fun, scroll: G.scroll, vol: AUDIO.vol, sfx: AUDIO.sfxOn, off: G.offsetMs,
+      keys: KEY_CUR.slice(), hit: sliderFromHitZ(HIT_Z),
     }));
   } catch (e) { /* file:// 등 */ }
 }
@@ -3569,6 +3783,20 @@ function loadPrefs() {
     $('#sfxToggle').setAttribute('aria-checked', String(p.sfx));
   }
   if (typeof p.off === 'number') setOffset(p.off);
+  if (Array.isArray(p.keys) && p.keys.length === 4) {
+    const seen = {};
+    let ok = true;
+    for (let i = 0; i < 4; i++) {
+      const k = String(p.keys[i] || '').toLowerCase();
+      if (k.length !== 1 || k === ' ' || seen[k]) { ok = false; break; }
+      seen[k] = 1;
+      KEY_CUR[i] = k;
+    }
+    if (!ok) KEY_CUR = KEY_DEF.slice();
+    rebuildKeyLane();
+  }
+  if (typeof p.hit === 'number') applyHitZ(hitZFromSlider(p.hit), { save: false });
+  savePrefs();
 }
 
 /* ---------------------------- flow ---------------------------- */
@@ -3653,6 +3881,7 @@ async function startGame() {
   $('#app').dataset.screen = 'play';
   $('#app').dataset.fever = '0';
   G.screen = 'play';
+  alignPads();
 }
 
 function pauseGame() {
@@ -3751,7 +3980,7 @@ function popText(text, cls) {
 }
 
 function pressLane(lane) {
-  if (G.screen !== 'play' || G.paused) return;
+  if (G.screen !== 'play' || G.paused || G.settings) return;
   const t = gameTimeNow();
   if (t < -0.6) return;
   let best = null, bestD = 9;
@@ -3794,8 +4023,8 @@ function judgeNote(n, d) {
   AUDIO.hitSfx(n.lane, k);
 
   const x = LANE_X[n.lane];
-  emitBurst(x, NOTE_Y + 0.05, 0.1, LANE_HEX[n.lane], k === 0 ? 16 : k === 1 ? 11 : 7, k === 0 ? 1.15 : 0.85);
-  if (k === 0) emitRing(x, NOTE_Y, 0.05, LANE_HEX[n.lane], 1.25);
+  emitBurst(x, NOTE_Y + 0.05, HIT_Z + 0.1, LANE_HEX[n.lane], k === 0 ? 16 : k === 1 ? 11 : 7, k === 0 ? 1.15 : 0.85);
+  if (k === 0) emitRing(x, NOTE_Y, HIT_Z + 0.05, LANE_HEX[n.lane], 1.25);
   if (k === 0 && G.combo > 0 && G.combo % 25 === 0) {
     emitRing(0, MASCOT_Y - 1.5, MASCOT_Z, 0xc9a6ff, 5.5);
     emitBurst(0, MASCOT_Y - 0.6, MASCOT_Z, 0xd8bcff, 26, 1.4);
@@ -3826,7 +4055,7 @@ function triggerFever() {
   $('#app').dataset.fever = '1';
   SC.mascot.comboGlow = 1;
   emitRing(0, MASCOT_Y - 1.4, MASCOT_Z, 0xffd479, 7);
-  for (let i = 0; i < 4; i++) emitBurst(LANE_X[i], NOTE_Y, 0, LANE_HEX[i], 12, 1.2);
+  for (let i = 0; i < 4; i++) emitBurst(LANE_X[i], NOTE_Y, HIT_Z, LANE_HEX[i], 12, 1.2);
   popText('FEVER!', 'perfect');
 }
 
@@ -4018,7 +4247,7 @@ function updateNotesVisual(t) {
     const lane = n.lane;
     const pool = SC.notePools[lane];
     if (counts[lane] >= NOTE_CAP) continue;
-    const z = -dz * speed;
+    const z = HIT_Z - dz * speed;
     const fadeIn = clamp((approach + 0.35 - dz) * 6, 0, 1);
     const near = clamp(1 - Math.max(0, dz) / approach, 0, 1);
     pool.dummy.position.set(LANE_X[lane], NOTE_Y, z);
@@ -4287,8 +4516,386 @@ function updateMascot(dt, wall, pulse, bp) {
   M.aura.scale.set(as, as, 1);
 }
 
+/* ---------------------------- settings (⚙) ---------------------------- */
+const LANE_CSS = ['#c6a3ff', '#78e9ff', '#8dffd6', '#ffaad8'];
+const LANE_RGB = [[198, 163, 255], [120, 233, 255], [141, 255, 214], [255, 170, 216]];
+const PREVIEW = { raf: 0, hits: [0, 0, 0, 0] };
+
+function rgbaLane(i, a) {
+  const c = LANE_RGB[i];
+  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+}
+
+function rebuildKeyLane() {
+  const m = {};
+  for (const k in KEY_ARROWS) m[k] = KEY_ARROWS[k];
+  for (let i = 0; i < 4; i++) if (KEY_CUR[i]) m[KEY_CUR[i]] = i;
+  KEY_LANE = m;
+  const labels = KEY_CUR.map((k) => (k && k.length === 1 ? k.toUpperCase() : (k || '').toUpperCase()));
+  $$('.pad').forEach((pad, i) => {
+    const el = pad.querySelector('.pad-key');
+    if (el) el.textContent = labels[i];
+  });
+  $$('#keyGrid .key-btn').forEach((b, i) => {
+    if (bindLane === i) return;
+    const el = b.querySelector('b');
+    if (el) el.textContent = labels[i];
+  });
+  const fk = $('#footKeys');
+  if (fk) fk.textContent = labels.join(' · ');
+}
+
+function showKeyNote(msg) {
+  const el = $('#keyNote');
+  if (!el) return;
+  clearTimeout(keyNoteTimer);
+  if (!msg) { el.textContent = ''; el.classList.remove('on'); return; }
+  el.textContent = msg;
+  el.classList.add('on');
+  keyNoteTimer = setTimeout(() => { el.classList.remove('on'); }, 2800);
+}
+
+function startBind(lane) {
+  bindLane = lane;
+  $$('#keyGrid .key-btn').forEach((b, i) => {
+    b.classList.toggle('listening', i === lane);
+    const el = b.querySelector('b');
+    if (el) el.textContent = i === lane ? t('keyListening') : KEY_CUR[i].toUpperCase();
+  });
+  showKeyNote('');
+  if (AUDIO.ctx) AUDIO.uiClick();
+}
+
+function cancelBind() {
+  if (bindLane < 0) return;
+  bindLane = -1;
+  $$('#keyGrid .key-btn').forEach((b) => b.classList.remove('listening'));
+  rebuildKeyLane();
+}
+
+function setLaneKey(lane, raw) {
+  const k = String(raw || '').toLowerCase();
+  if (k.length !== 1 || k === ' ') return false;
+  if (KEY_CUR[lane] === k) return false;
+  const other = KEY_CUR.indexOf(k);
+  if (other >= 0) KEY_CUR[other] = KEY_CUR[lane];
+  KEY_CUR[lane] = k;
+  rebuildKeyLane();
+  showKeyNote(other >= 0 ? t('keySwap', { k: k.toUpperCase(), n: other + 1 }) : '');
+  savePrefs();
+  return true;
+}
+
+function resetKeys() {
+  KEY_CUR = KEY_DEF.slice();
+  cancelBind();
+  rebuildKeyLane();
+  showKeyNote(t('keyResetDone'));
+  savePrefs();
+  if (AUDIO.ctx) AUDIO.uiClick();
+}
+
+/* 판정선: 슬라이더 0(위·멀리) ~ 100(아래·키 가까이) ↔ HIT_Z */
+function hitZFromSlider(v) {
+  return HIT_Z_MIN + (clamp(v, 0, 100) / 100) * (HIT_Z_MAX - HIT_Z_MIN);
+}
+function sliderFromHitZ(z) {
+  return Math.round(((clamp(z, HIT_Z_MIN, HIT_Z_MAX) - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN)) * 100);
+}
+
+function applyHitZ(z, opts) {
+  HIT_Z = clamp(z, HIT_Z_MIN, HIT_Z_MAX);
+  if (SC.hitBar) SC.hitBar.position.z = HIT_Z;
+  if (SC.zone) SC.zone.mesh.position.z = HIT_Z - 0.58;
+  if (SC.slots) for (let i = 0; i < SC.slots.length; i++) SC.slots[i].mesh.position.z = HIT_Z;
+  if (SC.ringGlow) for (let i = 0; i < SC.ringGlow.length; i++) SC.ringGlow[i].sp.position.z = HIT_Z - 0.12;
+  if (SC.laneLights) for (let i = 0; i < SC.laneLights.length; i++) SC.laneLights[i].light.position.z = HIT_Z - 1.2;
+  if (SC.floorMat) SC.floorMat.uniforms.uHitZ.value = HIT_Z;
+  const rng = $('#hitRange');
+  if (rng) rng.value = String(sliderFromHitZ(HIT_Z));
+  if (!opts || opts.save !== false) savePrefs();
+  alignPads();
+}
+
+/* 3D 하이웨이 레인 폭에 터치 패드를 맞춘다 */
+function padsHeightPx() {
+  const w = window.innerWidth, h = window.innerHeight;
+  if (w <= 820) return clamp(h * 0.23, 120, 210);
+  return clamp(h * 0.17, 94, 168);
+}
+
+const _projV = new THREE.Vector3();
+function projXFrac(x, y, z) { _projV.set(x, y, z).project(camera); return _projV.x * 0.5 + 0.5; }
+function projYFrac(x, y, z) { _projV.set(x, y, z).project(camera); return 0.5 - _projV.y * 0.5; }
+
+function laneSpanAtScreenY(targetFrac) {
+  /* 판정선보다 살짝 먼 지점에서 시작해 카메라 앞까지만 훑는다 */
+  const zStart = HIT_Z - 4.5;
+  const zEnd = Math.min(HIT_Z + 22, camera.position.z - 3.5);
+  const step = 0.25;
+  let prevZ = zStart, prevY = projYFrac(0, NOTE_Y, prevZ);
+  for (let z = zStart + step; z <= zEnd; z += step) {
+    const y = projYFrac(0, NOTE_Y, z);
+    if ((prevY - targetFrac) * (y - targetFrac) <= 0) {
+      const f = Math.abs(y - prevY) < 1e-9 ? 0 : (targetFrac - prevY) / (y - prevY);
+      const zz = prevZ + (z - prevZ) * f;
+      return { l: projXFrac(LANE_X[0] - LANE_W / 2, NOTE_Y, zz), r: projXFrac(LANE_X[3] + LANE_W / 2, NOTE_Y, zz) };
+    }
+    prevZ = z; prevY = y;
+  }
+  return null;
+}
+
+function alignPads() {
+  const pads = $('#pads');
+  if (!pads || !camera) return null;
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.updateMatrixWorld();
+  const padH = padsHeightPx();
+  const padPad = w <= 820 ? 4 : 6;
+  const topFrac = clamp((h - padH) / h, 0.02, 0.98);
+  const sp = laneSpanAtScreenY(topFrac);
+  if (!sp) return null;
+  let l = sp.l * w - padPad;
+  let r = sp.r * w + padPad;
+  const minW = Math.min(w - 6, Math.max(170, w * 0.3));
+  if (r - l < minW) { const c = (l + r) / 2; l = c - minW / 2; r = c + minW / 2; }
+  l = clamp(l, 2, w - 2);
+  r = clamp(r, 2, w - 2);
+  if (r - l < 120) { l = 2; r = w - 2; }
+  pads.style.left = l.toFixed(1) + 'px';
+  pads.style.width = (r - l).toFixed(1) + 'px';
+  pads.style.right = 'auto';
+  return { left: l, right: r, width: r - l, z: sp };
+}
+
+function roundRectPath(g, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  g.beginPath();
+  g.moveTo(x + rr, y);
+  g.arcTo(x + w, y, x + w, y + h, rr);
+  g.arcTo(x + w, y + h, x, y + h, rr);
+  g.arcTo(x, y + h, x, y, rr);
+  g.arcTo(x, y, x + w, y, rr);
+  g.closePath();
+}
+
+function previewLineFrac() {
+  const k = (HIT_Z - HIT_Z_MIN) / (HIT_Z_MAX - HIT_Z_MIN);
+  return 0.07 + clamp(k, 0, 1) * 0.84;
+}
+
+function drawHitPreview() {
+  const cv = $('#hitPreview');
+  if (!cv) return;
+  const rect = cv.getBoundingClientRect();
+  const w = Math.max(140, rect.width), h = Math.max(70, rect.height);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+  }
+  const g = cv.getContext('2d');
+  if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  const keyH = Math.round(clamp(h * 0.15, 13, 22));
+  const keyY = h - keyH;
+  const yTop = 3;
+  const yBot = keyY - 9;
+  const frac = previewLineFrac();
+  const yLine = yTop + (yBot - yTop) * frac;
+  const cx = w / 2;
+  const halfAt = (f) => (0.195 + 0.26 * clamp(f, 0, 1)) * w;
+
+  /* 바탕 */
+  const bg = g.createLinearGradient(0, 0, 0, h);
+  bg.addColorStop(0, '#0a0518'); bg.addColorStop(0.5, '#150a30'); bg.addColorStop(1, '#0a0418');
+  g.fillStyle = bg; g.fillRect(0, 0, w, h);
+  const hz = g.createRadialGradient(cx, yTop, 1, cx, yTop, w * 0.55);
+  hz.addColorStop(0, 'rgba(150,110,255,.34)'); hz.addColorStop(1, 'rgba(150,110,255,0)');
+  g.fillStyle = hz; g.fillRect(0, 0, w, h * 0.55);
+
+  /* 레인 */
+  for (let i = 0; i < 4; i++) {
+    const h0 = halfAt(0), h1 = halfAt(1);
+    const w0 = (h0 * 2) / 4, w1 = (h1 * 2) / 4;
+    const x0 = cx - h0 + i * w0, x1 = cx - h1 + i * w1;
+    g.beginPath();
+    g.moveTo(x0, yTop); g.lineTo(x0 + w0, yTop);
+    g.lineTo(x1 + w1, yBot); g.lineTo(x1, yBot);
+    g.closePath();
+    g.fillStyle = rgbaLane(i, 0.10); g.fill();
+    g.strokeStyle = rgbaLane(i, 0.38); g.lineWidth = 1; g.stroke();
+  }
+  /* 흐르는 마디선 */
+  for (let k = 0; k < 7; k++) {
+    const f = ((now * 0.5 + k / 7) % 1);
+    if (f <= 0.001) continue;
+    const half = halfAt(f);
+    const y = yTop + (yBot - yTop) * f;
+    g.strokeStyle = 'rgba(205,195,255,' + (0.07 + 0.06 * f).toFixed(3) + ')';
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(cx - half, y); g.lineTo(cx + half, y); g.stroke();
+  }
+
+  /* 노트 */
+  for (let i = 0; i < 4; i++) {
+    for (let k = 0; k < 2; k++) {
+      const ph = (now * 0.55 + i * 0.21 + k * 0.5) % 1;
+      if (ph < 0.001) PREVIEW.hits[i] = now;
+      const f = ph * frac;
+      const y = yTop + (yBot - yTop) * f;
+      const half = halfAt(f), lw = (half * 2) / 4;
+      const nx = cx - half + i * lw + lw * 0.17;
+      const nw = lw * 0.66;
+      const nh = Math.max(3.5, 3 + 6 * f);
+      g.save();
+      g.shadowColor = LANE_CSS[i];
+      g.shadowBlur = 8 + 12 * f;
+      g.fillStyle = LANE_CSS[i];
+      roundRectPath(g, nx, y - nh / 2, nw, nh, nh / 2);
+      g.fill();
+      g.restore();
+      g.fillStyle = 'rgba(255,255,255,.5)';
+      roundRectPath(g, nx + nw * 0.14, y - nh * 0.2, nw * 0.72, nh * 0.4, nh * 0.2);
+      g.fill();
+    }
+  }
+
+  /* 판정선 아래 판정 밴드 */
+  const hL = halfAt(frac);
+  const lx0 = cx - hL, lx1 = cx + hL;
+  const bandH = Math.min(16, Math.max(7, (yBot - yLine) * 0.16));
+  const band = g.createLinearGradient(0, yLine, 0, yLine + bandH);
+  band.addColorStop(0, 'rgba(255,226,170,.16)');
+  band.addColorStop(1, 'rgba(255,226,170,0)');
+  g.fillStyle = band;
+  g.fillRect(lx0, yLine, lx1 - lx0, bandH);
+  g.save();
+  g.shadowColor = 'rgba(255,220,150,.9)';
+  g.shadowBlur = 16;
+  g.strokeStyle = 'rgba(255,255,255,.95)';
+  g.lineWidth = 2.2;
+  g.beginPath(); g.moveTo(lx0, yLine); g.lineTo(lx1, yLine); g.stroke();
+  g.restore();
+  const lg = g.createLinearGradient(lx0, 0, lx1, 0);
+  lg.addColorStop(0, 'rgba(201,166,255,.0)');
+  lg.addColorStop(0.12, 'rgba(201,166,255,.95)');
+  lg.addColorStop(0.5, 'rgba(255,248,220,1)');
+  lg.addColorStop(0.88, 'rgba(255,170,216,.95)');
+  lg.addColorStop(1, 'rgba(255,170,216,0)');
+  g.strokeStyle = lg;
+  g.lineWidth = 4.5;
+  g.globalAlpha = 0.5;
+  g.beginPath(); g.moveTo(lx0, yLine); g.lineTo(lx1, yLine); g.stroke();
+  g.globalAlpha = 1;
+  for (let i = 0; i < 4; i++) {
+    const half = hL, lw = (half * 2) / 4;
+    const dx = cx - half + i * lw + lw / 2;
+    g.fillStyle = LANE_CSS[i];
+    g.beginPath(); g.arc(dx, yLine, 2.2, 0, Math.PI * 2); g.fill();
+    const ht = now - PREVIEW.hits[i];
+    if (ht >= 0 && ht < 0.22) {
+      g.strokeStyle = rgbaLane(i, (1 - ht / 0.22) * 0.85);
+      g.lineWidth = 1.4;
+      g.beginPath(); g.arc(dx, yLine, 3 + ht * 46, 0, Math.PI * 2); g.stroke();
+    }
+  }
+
+  /* 키 패드 */
+  const hK = halfAt(1), kw = (hK * 2) / 4;
+  for (let i = 0; i < 4; i++) {
+    const lit = (now - PREVIEW.hits[i]) < 0.14 ? 1 : 0;
+    const kx = cx - hK + i * kw + kw * 0.1;
+    const kwd = kw * 0.8;
+    g.save();
+    g.fillStyle = rgbaLane(i, 0.14 + lit * 0.34);
+    g.strokeStyle = rgbaLane(i, 0.45 + lit * 0.45);
+    g.lineWidth = 1.1;
+    if (lit) { g.shadowColor = LANE_CSS[i]; g.shadowBlur = 12; }
+    roundRectPath(g, kx, keyY + 1, kwd, keyH - 2, 4);
+    g.fill(); g.stroke();
+    g.restore();
+    g.fillStyle = LANE_CSS[i];
+    g.font = '700 ' + Math.round(clamp(keyH * 0.5, 8, 11)) + 'px ui-monospace,SFMono-Regular,Menlo,monospace';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText((KEY_CUR[i] || '').toUpperCase(), kx + kwd / 2, keyY + keyH / 2 + 0.5);
+  }
+}
+
+function startHitPreview() {
+  if (PREVIEW.raf) return;
+  const loop = () => {
+    if (!G.settings) { PREVIEW.raf = 0; return; }
+    drawHitPreview();
+    PREVIEW.raf = requestAnimationFrame(loop);
+  };
+  PREVIEW.raf = requestAnimationFrame(loop);
+}
+
+function stopHitPreview() {
+  if (PREVIEW.raf) cancelAnimationFrame(PREVIEW.raf);
+  PREVIEW.raf = 0;
+}
+
+function refreshSettingsTexts() {
+  $$('#keyGrid .key-btn').forEach((b, i) => {
+    const el = b.querySelector('b');
+    if (el && i === bindLane) el.textContent = t('keyListening');
+  });
+  rebuildKeyLane();
+}
+
+function openSettings() {
+  if (G.settings) return;
+  const scr = $('#settingsScreen');
+  if (!scr) return;
+  if (G.screen === 'play') { G.settingsFrom = 'play'; pauseGame(); }
+  else if (G.screen === 'pause') { G.settingsFrom = 'pause'; }
+  else G.settingsFrom = 'title';
+  if (G.settingsFrom !== 'title') $('#pauseScreen').classList.add('hidden');
+  G.settings = true;
+  $('#app').dataset.settings = '1';
+  scr.classList.remove('hidden');
+  bindLane = -1;
+  $$('#keyGrid .key-btn').forEach((b) => b.classList.remove('listening'));
+  rebuildKeyLane();
+  showKeyNote('');
+  const rng = $('#hitRange');
+  if (rng) rng.value = String(sliderFromHitZ(HIT_Z));
+  startHitPreview();
+  if (AUDIO.ctx && AUDIO.ctx.state === 'suspended') { try { AUDIO.ctx.resume(); } catch (e) {} }
+  if (AUDIO.ctx) AUDIO.uiClick();
+}
+
+function closeSettings() {
+  if (!G.settings) return;
+  cancelBind();
+  showKeyNote('');
+  G.settings = false;
+  $('#app').dataset.settings = '0';
+  const scr = $('#settingsScreen');
+  if (scr) scr.classList.add('hidden');
+  stopHitPreview();
+  const from = G.settingsFrom;
+  G.settingsFrom = 'title';
+  if (from === 'play') resumeGame();
+  else if (from === 'pause' && G.screen === 'pause') $('#pauseScreen').classList.remove('hidden');
+  alignPads();
+  if (AUDIO.ctx) AUDIO.uiClick();
+}
+
 /* ---------------------------- input ---------------------------- */
-const KEY_LANE = { d: 0, f: 1, j: 2, k: 3, arrowleft: 0, arrowdown: 1, arrowup: 2, arrowright: 3 };
+/* 설정에서 바꿀 수 있는 4키 (기본 D F J K) — 화살표는 보조 키로 항상 동작 */
+const KEY_DEF = ['d', 'f', 'j', 'k'];
+const KEY_ARROWS = { arrowleft: 0, arrowdown: 1, arrowup: 2, arrowright: 3 };
+let KEY_CUR = KEY_DEF.slice();
+let KEY_LANE = {};
+let bindLane = -1;
+let keyNoteTimer = 0;
 
 function bindUI() {
   /* 곡/난이도/옵션 */
@@ -4333,6 +4940,28 @@ function bindUI() {
 
   $('#startBtn').addEventListener('click', () => { startGame(); });
   $('#pauseBtn').addEventListener('click', () => pauseGame());
+  /* 설정 (⚙) */
+  const openers = [$('#settingsTitle'), $('#settingsHud'), $('#settingsPause')];
+  openers.forEach((b) => { if (b) b.addEventListener('click', () => openSettings()); });
+  const closeEls = [$('#setClose'), $('#setDone')];
+  closeEls.forEach((b) => { if (b) b.addEventListener('click', () => closeSettings()); });
+  $$('#keyGrid .key-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      const lane = +b.dataset.lane;
+      if (bindLane >= 0 && bindLane !== lane) cancelBind();
+      if (bindLane === lane) { cancelBind(); return; }
+      startBind(lane);
+    });
+  });
+  const resetBtn = $('#keyReset');
+  if (resetBtn) resetBtn.addEventListener('click', () => resetKeys());
+  const hitRange = $('#hitRange');
+  if (hitRange) hitRange.addEventListener('input', (e) => {
+    applyHitZ(hitZFromSlider(+e.target.value));
+    if (AUDIO.ctx) AUDIO.uiClick();
+  });
+  const setScreen = $('#settingsScreen');
+  if (setScreen) setScreen.addEventListener('pointerdown', (e) => { if (e.target === setScreen) closeSettings(); });
   $('#restartHud').addEventListener('click', () => { resumeCtxThen(startGame); });
   $('#resumeBtn').addEventListener('click', () => resumeGame());
   $('#restartBtn').addEventListener('click', () => { resumeCtxThen(startGame); });
@@ -4365,6 +4994,27 @@ function bindUI() {
   /* 키보드 */
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
+    /* 설정 창이 열려 있으면 게임 입력보다 설정이 먼저 */
+    if (G.settings) {
+      if (e.repeat) return;
+      if (bindLane >= 0) {
+        if (k === 'escape') { e.preventDefault(); cancelBind(); return; }
+        if (k === 'shift' || k === 'control' || k === 'alt' || k === 'meta' || k === 'capslock' || k === 'tab' || k === 'enter' || k === ' ') {
+          e.preventDefault(); return;
+        }
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (k.length === 1) {
+          e.preventDefault();
+          const lane = bindLane;
+          setLaneKey(lane, k);
+          cancelBind();
+        }
+        return;
+      }
+      if (k === 'escape') { e.preventDefault(); closeSettings(); return; }
+      if (KEY_LANE[k] !== undefined || k === ' ' || k === 'enter') e.preventDefault();
+      return;
+    }
     if (e.repeat) {
       if (KEY_LANE[k] !== undefined && G.screen === 'play') e.preventDefault();
       return;
@@ -4381,7 +5031,7 @@ function bindUI() {
       if (k === ' ' || k === 'escape') { e.preventDefault(); resumeGame(); return; }
       if (k === 'r') { e.preventDefault(); resumeCtxThen(startGame); return; }
     } else if (G.screen === 'title') {
-      const tapKey = k === 'd' || k === 'f' || k === 'j' || k === 'k' || k === ' ';
+      const tapKey = KEY_LANE[k] !== undefined || k === ' ';
       if (SYNC.running && (tapKey || k === 'escape')) {
         e.preventDefault();
         if (k === 'escape') SYNC.stop();
@@ -4462,6 +5112,50 @@ window.PICKLE = {
     }),
   },
   chart: () => buildChart(SONGS[G.songIndex], G.diff, G.fun).length,
+  settings: {
+    open: () => { openSettings(); return G.settings; },
+    close: () => { closeSettings(); return G.settings; },
+    isOpen: () => G.settings,
+    keys: () => KEY_CUR.slice(),
+    keyMap: () => Object.assign({}, KEY_LANE),
+    bind: (lane, k) => { const r = setLaneKey(+lane, k); cancelBind(); return r; },
+    listening: () => bindLane,
+    resetKeys: () => { resetKeys(); return KEY_CUR.slice(); },
+    hit: () => ({ z: +HIT_Z.toFixed(3), slider: sliderFromHitZ(HIT_Z), min: HIT_Z_MIN, max: HIT_Z_MAX }),
+    setHit: (v) => { applyHitZ(hitZFromSlider(+v)); return +HIT_Z.toFixed(3); },
+    setHitZ: (z) => { applyHitZ(+z); return +HIT_Z.toFixed(3); },
+    scene: () => ({
+      hitBar: SC.hitBar ? +SC.hitBar.position.z.toFixed(3) : null,
+      slots: SC.slots ? SC.slots.map((x) => +x.mesh.position.z.toFixed(3)) : [],
+      glow: SC.ringGlow ? SC.ringGlow.map((x) => +x.sp.position.z.toFixed(3)) : [],
+      zone: SC.zone ? +SC.zone.mesh.position.z.toFixed(3) : null,
+      floor: SC.floorMat ? +SC.floorMat.uniforms.uHitZ.value.toFixed(3) : null,
+    }),
+    pads: () => {
+      const ps = $$('.pad').map((p) => { const r = p.getBoundingClientRect(); return { lane: +p.dataset.lane, l: +r.left.toFixed(1), r: +r.right.toFixed(1), c: +(r.left + r.width / 2).toFixed(1), t: +r.top.toFixed(1), h: +r.height.toFixed(1) }; });
+      const box = $('#pads').getBoundingClientRect();
+      return { pads: ps, box: { l: +box.left.toFixed(1), r: +box.right.toFixed(1), w: +box.width.toFixed(1), t: +box.top.toFixed(1), h: +box.height.toFixed(1) } };
+    },
+    align: () => alignPads(),
+    probe: () => {
+      const w = window.innerWidth, h = window.innerHeight;
+      camera.updateMatrixWorld();
+      const ys = [0, 0.5, 1, 2, 4, 8, 12].map((z) => +projYFrac(0, NOTE_Y, HIT_Z + z).toFixed(5));
+      return {
+        w, h, hit: +HIT_Z.toFixed(3), padH: padsHeightPx(), target: +((h - padsHeightPx()) / h).toFixed(5),
+        ys, xs: [0, 0.5, 2].map((z) => [projXFrac(-4.6, NOTE_Y, HIT_Z + z), projXFrac(4.6, NOTE_Y, HIT_Z + z)]),
+        span: laneSpanAtScreenY((h - padsHeightPx()) / h),
+        cam: { p: [camera.position.x, camera.position.y, camera.position.z], fov: camera.fov, aspect: camera.aspect },
+      };
+    },
+    laneCenters: () => {
+      const w = window.innerWidth, h = window.innerHeight;
+      camera.updateMatrixWorld();
+      const out = [];
+      for (let i = 0; i < 4; i++) out.push(+(projXFrac(LANE_X[i], NOTE_Y, HIT_Z) * w).toFixed(1));
+      return out;
+    },
+  },
   fun: (v) => { selectFun(v); return G.fun; },
   setDiff: (d) => { selectDiff(d); return G.diff; },
   forcePixel: (v, sunH) => { G.pixelForce = v; G.sunForce = sunH == null ? null : sunH; return G.pixel; },
