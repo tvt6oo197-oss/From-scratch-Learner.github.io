@@ -171,6 +171,19 @@ input{font-family:inherit}
 #app[data-fever="1"] .fever-bar{box-shadow:0 0 26px rgba(255,180,90,.65),inset 0 1px 3px rgba(0,0,0,.4)}
 #app[data-fever="1"] .fever-label b{color:var(--gold)}
 
+/* ---------- pixel sunset veil (FUN gimmick) ---------- */
+#pixelVeil{
+  position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;
+  background:
+    repeating-linear-gradient(0deg,rgba(26,8,30,.17) 0 1px,rgba(0,0,0,0) 1px 3px),
+    radial-gradient(130% 95% at 50% 30%,rgba(255,186,96,.06) 0%,rgba(150,50,110,.07) 54%,rgba(26,8,34,.30) 100%);
+}
+
+/* ---------- shake transforms ---------- */
+#scene{transform:translate3d(var(--skx,0px),var(--sky,0px),0)}
+#hud{transform:translate3d(var(--hx,0px),var(--hy,0px),0)}
+#pads{transform:translate3d(var(--pxx,0px),var(--pxy,0px),0)}
+
 /* ---------- touch pads ---------- */
 .pads{
   position:absolute;left:0;right:0;bottom:0;z-index:5;
@@ -206,6 +219,40 @@ input{font-family:inherit}
 }
 .pad.on::after{opacity:1;height:4px;box-shadow:0 0 20px var(--pc),0 0 46px var(--pc-glow)}
 .pad.on .pad-key{opacity:1;transform:translateX(-50%) scale(1.1)}
+
+/* 도트(픽셀) 모드: 8비트 스타일 패드 */
+#app[data-pixel="1"] .pad{
+  border-radius:0;
+  border:2px solid var(--pc);
+  background:
+    repeating-linear-gradient(90deg,rgba(0,0,0,.26) 0 3px,rgba(0,0,0,0) 3px 6px),
+    repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 3px,rgba(0,0,0,0) 3px 6px),
+    linear-gradient(to top,var(--pc-bg2),rgba(58,28,44,.68));
+  box-shadow:inset 0 0 0 2px rgba(14,4,18,.7),4px 4px 0 0 rgba(18,5,24,.55);
+  transition:background .06s steps(1),box-shadow .06s steps(1),transform .06s steps(1);
+}
+#app[data-pixel="1"] .pad::after{
+  left:0;right:0;height:4px;border-radius:0;opacity:.95;
+  background:repeating-linear-gradient(90deg,var(--pc) 0 4px,rgba(0,0,0,0) 4px 8px);
+  box-shadow:none;
+}
+#app[data-pixel="1"] .pad .pad-key{
+  font-size:15px;letter-spacing:0;bottom:8px;opacity:1;
+  text-shadow:2px 2px 0 rgba(16,4,20,.8);
+}
+#app[data-pixel="1"] .pad.on{
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.20) 0 3px,rgba(255,255,255,0) 3px 6px),
+    linear-gradient(to top,var(--pc-bg2),rgba(72,30,44,.75));
+  box-shadow:inset 0 0 0 2px rgba(255,240,215,.3),4px 4px 0 0 rgba(255,160,90,.4);
+  transform:translateY(2px);
+}
+#app[data-pixel="1"] .pad.on .pad-key{transform:translateX(-50%);}
+
+/* 도트 모드 HUD: 그림자만 각지게 */
+#app[data-pixel="1"] .hud-score .v{text-shadow:2px 2px 0 rgba(30,8,32,.85)}
+#app[data-pixel="1"] .combo-box span{text-shadow:3px 3px 0 rgba(40,10,32,.8)}
+#app[data-pixel="1"] .progress-fill{box-shadow:none}
 .pad[data-lane="0"]{--pc:var(--lane0);--pc-glow:rgba(198,163,255,.6);--pc-bg:rgba(198,163,255,.20);--pc-bg2:rgba(198,163,255,.42);--pc-line:rgba(198,163,255,.34)}
 .pad[data-lane="1"]{--pc:var(--lane1);--pc-glow:rgba(120,233,255,.55);--pc-bg:rgba(120,233,255,.17);--pc-bg2:rgba(120,233,255,.38);--pc-line:rgba(120,233,255,.3)}
 .pad[data-lane="2"]{--pc:var(--lane2);--pc-glow:rgba(141,255,214,.55);--pc-bg:rgba(141,255,214,.17);--pc-bg2:rgba(141,255,214,.38);--pc-line:rgba(141,255,214,.3)}
@@ -332,6 +379,39 @@ input{font-family:inherit}
 .seg button small{font-size:8px;letter-spacing:.1em;opacity:.55;font-weight:600}
 .seg button.on{color:#fff;background:linear-gradient(180deg,rgba(160,110,255,.5),rgba(110,70,200,.42));box-shadow:0 0 16px rgba(140,90,255,.4),inset 0 1px 0 rgba(255,255,255,.22)}
 .seg.tiny button{padding:6px 2px;font-size:9.5px;letter-spacing:.06em}
+.seg.four button{padding:7px 2px;font-size:9.5px;letter-spacing:.05em}
+.seg.four button small{font-size:7.5px;letter-spacing:.04em}
+#diffSeg button[data-diff="3"] .fun,.
+#diffSeg button.fun{color:#ffd9a8}
+#diffSeg button.fun.on{
+  color:#2a0d1e;
+  background:linear-gradient(180deg,#ffd08a,#ff9d6e 52%,#f0648f);
+  box-shadow:0 0 20px rgba(255,150,90,.55),inset 0 1px 0 rgba(255,255,255,.55);
+}
+#diffSeg button.fun.on small{opacity:.75}
+
+/* ---------- fun sub-mode ---------- */
+.row.fun-row{display:none;align-items:center;gap:9px;margin-top:-2px}
+.row.fun-row.on{display:flex;animation:funIn .24s ease both}
+@keyframes funIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.fun-label{
+  flex:0 0 auto;font-size:9px;letter-spacing:.12em;font-weight:700;color:#ffc9a0;
+  text-transform:uppercase;white-space:nowrap;text-shadow:0 0 12px rgba(255,150,90,.4);
+}
+#funSeg{flex:0 1 250px;min-width:132px}
+#funSeg button{padding:6px 4px}
+.fun-hint{
+  margin:0 0 4px;font-size:9px;line-height:1.35;letter-spacing:.04em;color:#ffc79a;
+  text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+  text-shadow:0 0 12px rgba(255,150,90,.45);
+}
+#funSeg button.on{
+  color:#2a0d1e;
+  background:linear-gradient(180deg,#ffd9a8,#ffb07a 55%,#f486a0);
+  box-shadow:0 0 18px rgba(255,150,90,.5),inset 0 1px 0 rgba(255,255,255,.5);
+}
+#funSeg button.on small{opacity:.7}
+#app[data-fun="1"] .hud-song em{letter-spacing:.1em;color:#ffcf9a;border-color:rgba(255,175,120,.35);background:rgba(255,140,90,.14)}
 
 input[type=range]{
   -webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;pointer-events:auto;
@@ -573,7 +653,22 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   .song .meta span{font-size:9.5px}
   .song .bpm{display:none}
   .field{flex:1 1 100%}
-  .row.opts{grid-template-columns:1fr 1fr;gap:10px}
+  .row.opts{grid-template-columns:1fr 1fr auto;gap:8px}
+  .start-btn{padding:13px}
+  .brand-mark{width:42px;height:42px}
+  .seg.four button{font-size:8.6px;letter-spacing:0;padding:7px 1px}
+  .seg.four button small{font-size:6.5px}
+  .row.fun-row.on{display:flex;gap:7px}
+  .fun-label{font-size:8px;letter-spacing:.06em}
+  #funSeg{flex:1 1 auto;min-width:0}
+  .fun-hint{display:none}
+  .panel{gap:8px;padding:10px}
+  .title-wrap{gap:7px}
+  .songs{gap:6px}
+  .song{padding:7px 10px}
+  .sync-track{height:32px}
+  .offset-card{padding:8px 10px 9px;gap:5px}
+  .sync-foot{min-height:18px}
   .lang-pills{padding:2px;gap:1px}
   .lang-pills button{padding:4px 5px;font-size:8px;letter-spacing:.02em}
   .offset-card{padding:10px 11px 11px;border-radius:14px;gap:6px}
@@ -598,8 +693,9 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   .rank-ring span{font-size:42px}
 }
 @media (min-width:521px) and (max-height:900px){
-  .title-wrap{gap:13px}
-  .panel{padding:16px 18px;gap:11px}
+  .title-wrap{gap:11px}
+  .panel{padding:12px 17px;gap:9px}
+  .title-foot{font-size:10px}
   .song{padding:9px 12px}
   .song .chip{width:30px;height:30px;border-radius:10px}
   .song .meta b{font-size:14px}
@@ -627,6 +723,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   <canvas id="scene"></canvas>
   <div id="vignette"></div>
   <div id="feverGlow"></div>
+  <div id="pixelVeil"></div>
 
   <!-- ============ HUD ============ -->
   <div id="hud" class="layer">
@@ -688,12 +785,22 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <div class="row">
           <div class="field">
             <label data-i18n="diff">난이도</label>
-            <div class="seg" id="diffSeg">
+            <div class="seg four" id="diffSeg">
               <button data-diff="0"><span data-i18n="diffEasy">EASY</span><small>Lv.3</small></button>
               <button data-diff="1" class="on"><span data-i18n="diffNormal">NORMAL</span><small>Lv.7</small></button>
               <button data-diff="2"><span data-i18n="diffHard">HARD</span><small>Lv.12</small></button>
+              <button data-diff="3" class="fun"><span data-i18n="diffFun">재미용</span><small>✦</small></button>
             </div>
           </div>
+        </div>
+
+        <div class="row fun-row" id="funRow">
+          <label class="fun-label">✦ <span data-i18n="funMode">재미용 모드</span></label>
+          <div class="seg" id="funSeg">
+            <button data-fun="0" class="on"><span data-i18n="funEasy">쉬움</span><small>Lv.4</small></button>
+            <button data-fun="1"><span data-i18n="funExtreme">익스트림</span><small>Lv.16</small></button>
+          </div>
+          <p class="fun-hint" data-i18n="funHint">후반 도트 노을 바닷가 · 화면 진동</p>
         </div>
 
         <div class="row opts">
@@ -828,6 +935,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 /* ------------------------------ utils ------------------------------ */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1056,9 +1164,11 @@ const LANE_PATS = [
   [0, 1, 0, 3, 1, 2, 3, 2],
 ];
 
-function buildChart(song, diff) {
+function buildChart(song, diff, fun) {
   const stepDur = 60 / song.bpm / 4;
   const bars = song.bars;
+  /* 0 EASY · 1 NORMAL · 2 HARD · 3 재미용(fe=쉬움, fx=익스트림) */
+  const mode = diff === 3 ? (fun ? 'fx' : 'fe') : String(diff);
   const cands = [];
   for (let bar = 0; bar < bars; bar++) {
     for (let step = 0; step < 16; step++) {
@@ -1077,27 +1187,70 @@ function buildChart(song, diff) {
     }
   }
 
-  const keep = cands.filter((c) => {
-    if (diff === 0) {
+  let keep = cands.filter((c) => {
+    if (mode === '0') {
       /* EASY: 4분음표 위주, 강한 박만 8분 추가 */
       if (c.step % 4 === 0) return true;
       return c.step % 2 === 0 && c.str >= 1.3 && c.sec !== 'build';
     }
-    if (diff === 1) {
+    if (mode === '1') {
       /* NORMAL: 8분음표 위주 + 강조 16분 */
       if (c.step % 2 === 0) return true;
       return c.str >= 1.35 && c.sec !== 'build';
     }
-    /* HARD: 전부 */
+    if (mode === 'fe') {
+      /* 재미용 · 쉬움: 4분음표 중심 + 후렴에서만 8분 추가 (이지~노멀 사이) */
+      if (c.step % 4 === 0) return true;
+      if (c.step % 4 === 2) return c.sec === 'drop' || c.sec === 'final' || c.str >= 1.25;
+      return false;
+    }
+    /* HARD / 재미용 · 익스트림: 전부 */
     return true;
   });
+
+  /* 재미용 · 익스트림: 16분 스트림·버스트를 stepData와 같은 그리드에 더한다 (음악과 위상 동일) */
+  if (mode === 'fx') {
+    const have = new Set(keep.map((c) => c.bar * 16 + c.step));
+    const extra = [];
+    for (let bar = 0; bar < bars; bar++) {
+      const sec = sectionOf(bar, song.bars);
+      if (sec === 'intro' || sec === 'outro') continue;
+      const ph = bar % 4;
+      for (let step = 0; step < 16; step++) {
+        if (have.has(bar * 16 + step)) continue;
+        let add = false;
+        if (sec === 'drop' || sec === 'final') {
+          if (ph === 0 && step >= 12) add = true;                       /* 16분 버스트 */
+          else if (ph === 2 && step >= 4 && step < 10) add = true;      /* 중간 버스트 */
+          else if (ph === 3 && (step === 2 || step === 6 || step === 10)) add = true;
+          else if (step === 15 && bar % 2 === 0) add = true;
+        } else if (sec === 'verse') {
+          if (step % 4 === 2) add = true;                               /* 엇박 8분 */
+        } else if (sec === 'build') {
+          if (step % 2 === 0) add = true;                               /* 빌드 8분 */
+        } else if (sec === 'break') {
+          if (step % 4 === 2 && bar % 2 === 0) add = true;
+        }
+        if (add) extra.push({ t: (bar * 16 + step) * stepDur, bar, step, str: 0.8, sec });
+      }
+    }
+    keep = keep.concat(extra).sort((a, b) => a.t - b.t || a.step - b.step);
+  }
 
   const notes = [];
   const lastLane = [-9, -9, -9, -9];
   let lastT = -9;
   let barCount = -1;
   let barIdx = 0;
-  let lastLaneUsed = -1;
+
+  const push = (t, lane) => {
+    notes.push({ t, lane, hit: false, judged: false, jt: -1, missFade: 0 });
+    lastLane[lane] = t;
+    if (t > lastT) lastT = t;
+  };
+
+  /* 같은 레인 연타 금지 간격 */
+  const gap = mode === 'fx' ? 0.112 : mode === '2' ? 0.115 : 0.14;
 
   for (const c of keep) {
     if (c.bar !== barCount) { barCount = c.bar; barIdx = 0; }
@@ -1105,8 +1258,6 @@ function buildChart(song, diff) {
     let lane = pat[barIdx % pat.length];
     barIdx++;
 
-    /* 연타 방지: 같은 레인 150ms 이내 금지 */
-    const gap = diff === 2 ? 0.115 : 0.14;
     if (c.t - lastLane[lane] < gap) {
       const order = [1, 2, 3].map((k) => (lane + k) % 4);
       let found = -1;
@@ -1116,21 +1267,18 @@ function buildChart(song, diff) {
       if (found < 0) continue;
       lane = found;
     }
-    /* 전체 최소 간격 */
-    if (c.t - lastT < 0.055) continue;
+    /* 전체 최소 간격 (같은 시각의 화음은 허용) */
+    if (c.t > lastT + 1e-6 && c.t - lastT < 0.05) continue;
 
-    notes.push({ t: c.t, lane, hit: false, judged: false, jt: -1, missFade: 0 });
-    lastLane[lane] = c.t;
-    lastT = c.t;
-    lastLaneUsed = lane;
+    push(c.t, lane);
 
-    /* HARD: 강한 다운비트에 2노트 */
-    if (diff === 2 && c.step === 0 && c.sec !== 'intro' && c.bar % 2 === 0 && c.str >= 1.4) {
+    /* HARD: 강한 다운비트에 2노트 / 재미용·익스트림: 후렴 다운비트·8박에 화음 */
+    let wantChord = false;
+    if (mode === '2' && c.step === 0 && c.sec !== 'intro' && c.bar % 2 === 0 && c.str >= 1.4) wantChord = true;
+    if (mode === 'fx' && (c.step === 0 || c.step === 8) && (c.sec === 'drop' || c.sec === 'final')) wantChord = true;
+    if (wantChord) {
       const pair = 3 - lane;
-      if (c.t - lastLane[pair] >= 0.3 && c.t - lastT >= 0.055) {
-        notes.push({ t: c.t, lane: pair, hit: false, judged: false, jt: -1, missFade: 0 });
-        lastLane[pair] = c.t;
-      }
+      if (c.t - lastLane[pair] >= (mode === 'fx' ? 0.26 : 0.3)) push(c.t, pair);
     }
   }
 
@@ -1580,6 +1728,10 @@ const I18N = {
     songHint: '↑ ↓ 이동 · Enter 시작',
     diff: '난이도',
     diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    diffFun: '재미용',
+    funMode: '재미용 모드',
+    funEasy: '쉬움', funExtreme: '익스트림',
+    funHint: '후반 도트 노을 바닷가 · 화면 진동',
     vol: '볼륨',
     speed: '스크롤',
     speedSlow: '느리게', speedMid: '보통', speedFast: '빠르게',
@@ -1631,6 +1783,10 @@ const I18N = {
     songHint: '↑ ↓ move · Enter start',
     diff: 'DIFFICULTY',
     diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    diffFun: 'FUN',
+    funMode: 'FUN MODE',
+    funEasy: 'Easy', funExtreme: 'Extreme',
+    funHint: 'Pixel sunset beach · screen shake late on',
     vol: 'VOLUME',
     speed: 'SCROLL',
     speedSlow: 'Slow', speedMid: 'Normal', speedFast: 'Fast',
@@ -1682,6 +1838,10 @@ const I18N = {
     songHint: '↑ ↓ 移動 · Enter スタート',
     diff: '難易度',
     diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    diffFun: 'お楽しみ',
+    funMode: 'おたのしみモード',
+    funEasy: 'かんたん', funExtreme: 'エクストリーム',
+    funHint: '後半はドットの夕焼けビーチ・画面振動',
     vol: '音量',
     speed: 'スクロール',
     speedSlow: '遅め', speedMid: '標準', speedFast: '速め',
@@ -1733,6 +1893,10 @@ const I18N = {
     songHint: '↑ ↓ 选择 · Enter 开始',
     diff: '难度',
     diffEasy: '简单', diffNormal: '普通', diffHard: '困难',
+    diffFun: '趣味',
+    funMode: '趣味模式',
+    funEasy: '简单', funExtreme: '极限',
+    funHint: '后半段像素夕阳海滩・画面震动',
     vol: '音量',
     speed: '滚动速度',
     speedSlow: '慢', speedMid: '标准', speedFast: '快',
@@ -1784,6 +1948,10 @@ const I18N = {
     songHint: '↑ ↓ mover · Enter empezar',
     diff: 'DIFICULTAD',
     diffEasy: 'FÁCIL', diffNormal: 'NORMAL', diffHard: 'DIFÍCIL',
+    diffFun: 'FUN',
+    funMode: 'MODO FUN',
+    funEasy: 'Fácil', funExtreme: 'Extremo',
+    funHint: 'Playa pixel al atardecer · vibración',
     vol: 'VOLUMEN',
     speed: 'VELOCIDAD',
     speedSlow: 'Lenta', speedMid: 'Normal', speedFast: 'Rápida',
@@ -1894,7 +2062,9 @@ function songTagOf(song) {
   return (m && m[LANG.cur]) || (m && m.en) || song.tag || '';
 }
 function diffName(d) {
-  return t(['diffEasy', 'diffNormal', 'diffHard'][clamp(d, 0, 2)]);
+  const i = clamp(d, 0, 3);
+  if (i === 3) return t('diffFun') + ' · ' + t(G.fun ? 'funExtreme' : 'funEasy');
+  return t(['diffEasy', 'diffNormal', 'diffHard'][i]);
 }
 
 /* ============================ 3D SCENE ============================ */
@@ -1938,6 +2108,278 @@ function makeGlowTex() {
 }
 const GLOW_TEX = makeGlowTex();
 
+/* -------------------- 도트 노을 바닷가 (픽셀 배경) -------------------- */
+const SUNSET = {
+  canvas: null, ctx: null, tex: null, img: null, w: 0, h: 0,
+  sil: null, cm: null, acc: 0, last: -1,
+};
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const SKY_STOPS = [
+  [0.00, 255, 228, 172],
+  [0.09, 255, 194, 120],
+  [0.20, 252, 144, 112],
+  [0.34, 224, 90, 132],
+  [0.50, 168, 60, 138],
+  [0.68, 108, 46, 122],
+  [0.85, 64, 34, 98],
+  [1.00, 40, 26, 78],
+];
+
+function skyRamp(v, out) {
+  let i = 0;
+  while (i < SKY_STOPS.length - 2 && v > SKY_STOPS[i + 1][0]) i++;
+  const a = SKY_STOPS[i], b = SKY_STOPS[i + 1];
+  const k = clamp((v - a[0]) / (b[0] - a[0] || 1), 0, 1);
+  out[0] = a[1] + (b[1] - a[1]) * k;
+  out[1] = a[2] + (b[2] - a[2]) * k;
+  out[2] = a[3] + (b[3] - a[3]) * k;
+}
+
+function resizeSunset() {
+  const W = window.innerWidth, H = window.innerHeight;
+  const bh = IS_TOUCH ? 4.4 : 5;
+  let w = Math.max(64, Math.round(W / bh));
+  let h = Math.max(56, Math.round(H / bh));
+  const cap = 56000;
+  if (w * h > cap) {
+    const k = Math.sqrt(cap / (w * h));
+    w = Math.max(64, Math.round(w * k));
+    h = Math.max(56, Math.round(h * k));
+  }
+  if (SUNSET.canvas && SUNSET.w === w && SUNSET.h === h) return;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  SUNSET.canvas = c;
+  SUNSET.ctx = ctx;
+  SUNSET.w = w;
+  SUNSET.h = h;
+  SUNSET.img = ctx.createImageData(w, h);
+  if (SUNSET.tex) { try { SUNSET.tex.dispose(); } catch (e) {} }
+  const tex = new THREE.CanvasTexture(c);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  SUNSET.tex = tex;
+  if (SC.skyMat) SC.skyMat.uniforms.uSunset.value = tex;
+  SUNSET.last = -1;
+}
+
+const CLOUD_BANDS = [
+  /* rows: 위→아래 행별 폭 비율 (도트 구름 모양) */
+  { y: 0.26, rows: [0.34, 0.58, 0.84, 1.0, 0.92, 0.66, 0.38], x: 0.05, len: 0.31, sp: 0.55 },
+  { y: 0.47, rows: [0.42, 0.72, 0.96, 1.0, 0.84, 0.5], x: 0.47, len: 0.36, sp: 0.34 },
+  { y: 0.66, rows: [0.3, 0.55, 0.76, 0.6, 0.32], x: 0.14, len: 0.21, sp: 0.24 },
+];
+
+/* time: 초 단위 애니메이션, sunH: 지평선 위 태양 높이(하늘 띠 대비 0~1) */
+function drawSunset(time, sunH) {
+  const ctx = SUNSET.ctx;
+  if (!ctx) return;
+  const w = SUNSET.w, h = SUNSET.h, d = SUNSET.img.data;
+  const hz = clamp(SUNSET.hz || 0.46, 0.12, 0.62);
+  const horizon = Math.max(9, Math.round(h * hz));
+  const skyH = horizon;
+  const shore = Math.min(h - 2, horizon + Math.max(2, Math.round((h - horizon) * 0.45)));
+  const sunX = Math.round(w * 0.678);
+  const sunR = Math.max(4, Math.round(skyH * 0.132));
+  const sunCY = Math.round(horizon - clamp(sunH, 0, 0.95) * skyH);
+  const t = time;
+  const tmp = [0, 0, 0];
+
+  /* 실루엣 마스크: 언덕 + 야자수 */
+  const sil = (SUNSET.sil && SUNSET.sil.length === w * h) ? SUNSET.sil : (SUNSET.sil = new Uint8Array(w * h));
+  sil.fill(0);
+  for (let x = 0; x < w; x++) {
+    const u = x / w;
+    let top = 1e9;
+    const l = 1 - Math.abs(u - 0.13) / 0.23;
+    if (l > 0) top = Math.min(top, horizon - Math.round(Math.pow(l, 0.75) * skyH * 0.30));
+    const r2 = 1 - Math.abs(u - 0.885) / 0.085;
+    if (r2 > 0) top = Math.min(top, horizon - Math.round(Math.pow(r2, 1.1) * skyH * 0.11));
+    if (top < 1e9) for (let y = Math.max(0, top); y < horizon; y++) sil[y * w + x] = 1;
+  }
+  /* 야자수: 오른쪽 끝, 살짝 기울어진 줄기 + 잎 */
+  const px0 = Math.round(w * 0.932);
+  const crownY = Math.max(2, horizon - Math.round(skyH * 0.62));
+  for (let y = crownY; y < horizon; y++) {
+    const tx = px0 + Math.round((y - crownY) * 0.12);
+    if (tx >= 0 && tx < w) sil[y * w + tx] = 1;
+    if (tx + 1 < w) sil[y * w + tx + 1] = 1;
+  }
+  for (let f = 0; f < 6; f++) {
+    const a = -Math.PI + ((f + 0.5) / 6) * Math.PI;
+    const len = skyH * (0.34 + 0.09 * ((f * 37) % 3));
+    for (let k = 0; k < len; k++) {
+      const fx = px0 + Math.cos(a) * k;
+      const fy = crownY + Math.sin(a) * k * 0.62 + k * k * 0.011;
+      const ix = Math.round(fx), iy = Math.round(fy);
+      if (ix >= 0 && ix < w && iy >= 0 && iy < horizon) {
+        sil[iy * w + ix] = 1;
+        if (k > len * 0.66 && ix + 1 < w) sil[iy * w + ix + 1] = 1;
+      }
+    }
+  }
+
+  /* 구름 마스크: 행별 폭이 다른 도트 구름 */
+  const cm = (SUNSET.cm && SUNSET.cm.length === w * h) ? SUNSET.cm : (SUNSET.cm = new Uint8Array(w * h));
+  cm.fill(0);
+  const wrap = w + 80;
+  for (let ci = 0; ci < CLOUD_BANDS.length; ci++) {
+    const C = CLOUD_BANDS[ci];
+    const cy0 = horizon - Math.round(C.y * skyH) - C.rows.length;
+    const drift = ((C.x * w + t * C.sp * 3) % wrap) - 40;
+    for (let r = 0; r < C.rows.length; r++) {
+      const y = cy0 + r;
+      if (y < 0 || y >= horizon) continue;
+      const rowW = C.len * w * C.rows[r];
+      const xs = Math.round(drift + (C.len * w - rowW) * 0.5);
+      const xe = Math.round(xs + rowW);
+      for (const off of [0, wrap, -wrap]) {
+        const a0 = Math.max(0, xs + off), a1 = Math.min(w, xe + off);
+        if (a1 > a0) cm.fill(1, y * w + a0, y * w + a1);
+      }
+    }
+  }
+
+  for (let y = 0; y < h; y++) {
+    const rowBase = y * w;
+    if (y < horizon) skyRamp(1 - y / Math.max(1, horizon - 1), tmp);
+    for (let x = 0; x < w; x++) {
+      const idx = rowBase + x;
+      const i4 = idx * 4;
+      let r, g, b;
+      const bay = BAYER4[((y & 3) << 2) | (x & 3)] / 16 - 0.5;
+      if (y < horizon) {
+        const dx = x - sunX, dy = y - sunCY;
+        const dd = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+        /* 바탕 하늘 + 태양 빛무리 */
+        if (dd < sunR * 1.02) {
+          r = tmp[0]; g = tmp[1]; b = tmp[2];
+        } else {
+          const gl = Math.max(0, 1 - (dd - sunR) / (sunR * 3.4));
+          const q = gl * gl;
+          r = tmp[0] + 118 * q;
+          g = tmp[1] + 60 * q;
+          b = tmp[2] + 14 * q;
+        }
+        if (sil[idx]) {
+          const rim = y > 0 && !sil[idx - w];
+          r = rim ? 104 : 34; g = rim ? 44 : 18; b = rim ? 84 : 48;
+        } else if (cm[idx]) {
+          const topRim = y > 0 && !cm[idx - w];
+          if (topRim) { r = 226; g = 142; b = 146; }
+          else { r = 92; g = 46; b = 100; }
+          const d2 = Math.abs(x - sunX);
+          if (d2 < sunR * 2.6) {
+            const k2 = 1 - d2 / (sunR * 2.6);
+            r += 84 * k2; g += 40 * k2; b += 6 * k2;
+          }
+        }
+        /* 태양은 구름·언덕보다 앞: 항상 또렷한 픽셀 원 */
+        if (dd < sunR) {
+          if (dd < sunR * 0.40) { r = 252; g = 238; b = 190; }
+          else if (dd < sunR * 0.72) { r = 250; g = 208; b = 130; }
+          else { r = 246; g = 174; b = 98; }
+        }
+      } else if (y < shore) {
+        const v = (y - horizon) / Math.max(1, shore - horizon);
+        r = 62 - 26 * v;
+        g = 34 - 10 * v;
+        b = 100 - 30 * v;
+        const dxs = Math.abs(x - sunX);
+        const band = Math.max(0, 1 - dxs / (w * 0.085));
+        const refl = band * band * (0.58 + 0.42 * Math.sin(y * 0.85 + t * 2.6));
+        if (refl > 0) {
+          const k2 = refl * (1 - v * 0.55);
+          r += 205 * k2; g += 122 * k2; b += 48 * k2;
+        }
+        const wv = Math.sin(x * 0.55 + y * 1.9 + t * 2.1) + Math.sin(y * 0.75 - x * 0.22 - t * 1.4);
+        if (wv > 1.42) {
+          const k3 = (wv - 1.42) * 1.5;
+          r += 110 * k3 + 18; g += 74 * k3 + 8; b += 34 * k3;
+        }
+        if ((y - horizon) % 3 === 1 && ((x + y * 3) % 9) < 3) { r += 22; g += 14; b += 8; }
+      } else {
+        const v = (y - shore) / Math.max(1, h - shore);
+        r = 238 - 52 * v;
+        g = 190 - 50 * v;
+        b = 132 - 44 * v;
+        if (y - shore < 2) { r = 255; g = 232; b = 198; }
+        const grit = (((x * 13 + y * 7) ^ (x * y)) % 17) < 2 ? -26 : 0;
+        r += grit; g += grit; b += grit;
+      }
+      r = Math.round((r + bay * 16) / 16) * 16;
+      g = Math.round((g + bay * 16) / 16) * 16;
+      b = Math.round((b + bay * 16) / 16) * 16;
+      d[i4] = r < 0 ? 0 : r > 255 ? 255 : r;
+      d[i4 + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      d[i4 + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      d[i4 + 3] = 255;
+    }
+  }
+  ctx.putImageData(SUNSET.img, 0, 0);
+  if (SUNSET.tex) SUNSET.tex.needsUpdate = true;
+}
+
+/* -------------------- 픽셀화 포스트 패스 -------------------- */
+const PIXEL = { pass: null };
+function buildPixelPass() {
+  const shader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      uRes: { value: new THREE.Vector2(320, 200) },
+      uMix: { value: 0 },
+      uLevels: { value: 15.0 },
+      uWarm: { value: 0 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uRes;
+      uniform float uMix, uLevels, uWarm;
+      varying vec2 vUv;
+      void main(){
+        vec4 base = texture2D(tDiffuse, vUv);
+        if (uMix < 0.002) { gl_FragColor = base; return; }
+        vec2 cell = floor(vUv * uRes);
+        vec2 uv = (cell + 0.5) / uRes;
+        vec4 c = texture2D(tDiffuse, uv);
+        float dth = fract(cell.x * 0.5 + cell.y * cell.y * 0.75) - 0.5;
+        vec3 q = floor(c.rgb * uLevels + dth + 0.5) / uLevels;
+        vec3 warm = clamp(q * vec3(1.07, 0.97, 0.87) + vec3(0.02, 0.008, 0.0), 0.0, 1.0);
+        vec3 outc = mix(q, warm, uWarm);
+        gl_FragColor = vec4(mix(base.rgb, outc, clamp(uMix, 0.0, 1.0)), base.a);
+      }
+    `,
+  };
+  PIXEL.pass = new ShaderPass(shader);
+  composer.addPass(PIXEL.pass);
+  updatePixelRes();
+}
+
+function updatePixelRes() {
+  if (!PIXEL.pass) return;
+  const blk = IS_TOUCH ? 2.6 : 3.0;
+  PIXEL.pass.uniforms.uRes.value.set(
+    Math.max(80, Math.round(window.innerWidth / blk)),
+    Math.max(60, Math.round(window.innerHeight / blk))
+  );
+}
+
+function updateViewUniforms() {
+  if (!SC.skyMat || !renderer) return;
+  const v = renderer.getDrawingBufferSize(new THREE.Vector2());
+  SC.skyMat.uniforms.uView.value.set(v.x, v.y);
+}
+
 function initGraphics() {
   const canvas = $('#scene');
   renderer = new THREE.WebGLRenderer({
@@ -1973,6 +2415,9 @@ function initGraphics() {
   buildNotes();
   buildMascot();
   buildFx();
+  resizeSunset();
+  updateViewUniforms();
+  buildPixelPass();
 }
 
 /* 화면 비율에 맞춘 카메라 (세로 화면은 더 멀리서) */
@@ -2002,6 +2447,9 @@ function onResize() {
   composer.setSize(w, h);
   bloomPass.setSize(w, h);
   frameCamera();
+  updateViewUniforms();
+  updatePixelRes();
+  resizeSunset();
 }
 
 /* ---------------------------- world ---------------------------- */
@@ -2017,6 +2465,9 @@ function buildWorld() {
       uBot: { value: new THREE.Color(0x090a1e) },
       uGlow: { value: new THREE.Color(0x6335b8) },
       uPulse: { value: 0 },
+      uSunset: { value: null },
+      uPixel: { value: 0 },
+      uView: { value: new THREE.Vector2(1, 1) },
     },
     vertexShader: `
       varying vec3 vP;
@@ -2024,6 +2475,7 @@ function buildWorld() {
     `,
     fragmentShader: `
       uniform vec3 uTop, uMid, uBot, uGlow; uniform float uPulse;
+      uniform sampler2D uSunset; uniform float uPixel; uniform vec2 uView;
       varying vec3 vP;
       void main(){
         vec3 d = normalize(vP);
@@ -2032,6 +2484,11 @@ function buildWorld() {
         c = mix(c, uTop, smoothstep(0.18, 0.95, h));
         float horizon = exp(-pow(abs(h - 0.03) * 8.0, 2.0));
         c += uGlow * horizon * (0.22 + uPulse * 0.35);
+        if (uPixel > 0.002) {
+          vec2 suv = clamp(gl_FragCoord.xy / max(uView, vec2(1.0)), vec2(0.0), vec2(1.0));
+          vec3 sc = texture2D(uSunset, suv).rgb;
+          c = mix(c, sc, clamp(uPixel, 0.0, 1.0));
+        }
         gl_FragColor = vec4(c, 1.0);
       }
     `,
@@ -2076,6 +2533,7 @@ function buildWorld() {
       uEnergy: { value: 0 },
       uL: { value: LANE_HEX.map((h) => new THREE.Color(h)) },
       uBase: { value: new THREE.Color(0x04030a) },
+      uPixel: { value: 0 },
     },
     vertexShader: `
       varying vec3 vW;
@@ -2086,7 +2544,7 @@ function buildWorld() {
       }
     `,
     fragmentShader: `
-      uniform float uTime, uBeat, uEnergy;
+      uniform float uTime, uBeat, uEnergy, uPixel;
       uniform vec3 uL[4];
       uniform vec3 uBase;
       varying vec3 vW;
@@ -2135,7 +2593,42 @@ function buildWorld() {
         /* 히트존 앞 밝기 */
         col += lc * exp(-pow(z * 0.11, 2.0)) * 0.05 * fade * (0.5 + uBeat);
 
-        col *= smoothstep(0.0, 0.25, fade);
+        if (uPixel > 0.001) {
+          /* ---------- 도트 노을 바닷가: 픽셀 보드워크 · 바다 ---------- */
+          float cell = 0.62;
+          vec2 gp = floor(vec2(x, z) / cell);
+          vec2 gq = mod(gp, vec2(53.0));
+          float hv = fract(sin(gq.x * 12.9898 + gq.y * 78.233) * 43758.5453);
+          hv = floor(hv * 4.0) / 4.0;
+          vec3 sand = mix(vec3(0.085, 0.055, 0.032), vec3(0.33, 0.225, 0.135), hv);
+          sand = mix(sand, lc * 0.30 + vec3(0.11, 0.062, 0.022), 0.30);
+          /* 타일 격자: 2칸마다 진한 선 */
+          float gx = smoothstep(0.44, 0.5, abs(fract(x / (cell * 3.0) + 0.5) - 0.5));
+          float gz = smoothstep(0.44, 0.5, abs(fract(z / (cell * 3.0) + 0.5) - 0.5));
+          sand *= 1.0 - 0.28 * max(gx, gz);
+          float sepPx = exp(-ed * ed * 420.0);
+          sand = mix(sand, vec3(0.98, 0.88, 0.70), sepPx * 0.6);
+          float bzPx = abs(fract(z / 4.6 + 0.5) - 0.5) * 4.6;
+          sand = mix(sand, vec3(0.95, 0.72, 0.38), step(bzPx, 0.14) * (0.18 + 0.4 * uBeat));
+
+          /* 바다: 레일 밖과 아주 먼 곳 */
+          float zb = clamp((z + 170.0) / 150.0, 0.0, 1.0);
+          vec3 sea = mix(vec3(0.015, 0.016, 0.048), vec3(0.085, 0.042, 0.13), zb);
+          float band = floor(z / 1.35 + uTime * 0.35);
+          float bh = fract(sin(mod(band, 43.0) * 9.13) * 4375.85);
+          sea *= 0.86 + 0.34 * bh;
+          float dash = step(0.9, fract(x * 0.62 + band * 3.7));
+          sea += vec3(1.0, 0.72, 0.42) * dash * step(0.66, bh) * 0.42;
+
+          float farSea = 1.0 - smoothstep(-178.0, -108.0, z);
+          float seaM = clamp(smoothstep(5.0, 6.0, abs(x)) + farSea, 0.0, 1.0);
+          vec3 pxCol = mix(sand, sea, seaM);
+          float pxFade = mix(smoothstep(0.0, 0.30, fade), smoothstep(-206.0, -158.0, z) * (0.35 + 0.65 * near), seaM);
+          col = mix(col, pxCol, uPixel);
+          col *= mix(smoothstep(0.0, 0.25, fade), pxFade, uPixel);
+        } else {
+          col *= smoothstep(0.0, 0.25, fade);
+        }
         gl_FragColor = vec4(col, 1.0);
       }
     `,
@@ -2162,6 +2655,7 @@ function buildWorld() {
   const railMat = new THREE.MeshBasicMaterial({
     color: 0x9f7bff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false,
   });
+  SC.railMats = [railMat];
   for (let i = 0; i <= 4; i++) {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 170), railMat);
     rail.position.set(-4.6 + i * 2.3, 0.035, -75);
@@ -2170,6 +2664,7 @@ function buildWorld() {
   const edgeMat = new THREE.MeshBasicMaterial({
     color: 0x8fe6ff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false,
   });
+  SC.railMats.push(edgeMat);
   for (const sx of [-1, 1]) {
     const rail = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.075, 170), edgeMat);
     rail.position.set(sx * 5.15, 0.06, -75);
@@ -2257,13 +2752,17 @@ function buildWorld() {
   SC.moon = { sp: moon, mat: moonMat };
 
   /* 조명 */
-  scene.add(new THREE.HemisphereLight(0x5b4a96, 0x0d0718, 0.9));
+  const hemi = new THREE.HemisphereLight(0x5b4a96, 0x0d0718, 0.9);
+  scene.add(hemi);
+  SC.hemi = hemi;
   const key = new THREE.DirectionalLight(0xd9c6ff, 1.25);
   key.position.set(7, 16, 12);
   scene.add(key);
+  SC.key = key;
   const rim = new THREE.DirectionalLight(0x5fd8ff, 1.2);
   rim.position.set(-9, 8, -16);
   scene.add(rim);
+  SC.rim = rim;
 
   const spot = new THREE.SpotLight(0xd8b6ff, 46, 46, 0.66, 0.7, 1.4);
   spot.position.set(0, 18, -6);
@@ -2283,6 +2782,7 @@ const NOTE_CAP = 18;
 function buildNotes() {
   const geo = new THREE.CapsuleGeometry(0.195, 1.55, 3, 14);
   geo.rotateZ(Math.PI / 2);
+  const boxGeo = new THREE.BoxGeometry(1.92, 0.38, 0.36);
   const haloGeo = new THREE.PlaneGeometry(2.45, 1.5);
   for (let i = 0; i < 4; i++) {
     const mat = new THREE.MeshBasicMaterial({
@@ -2304,7 +2804,15 @@ function buildNotes() {
     halo.count = 0;
     scene.add(halo);
 
-    SC.notePools.push({ inst, mat, dummy: new THREE.Object3D(), halo, haloMat });
+    /* 도트 모드용 8비트 블록 노트 */
+    const box = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(NOTE_HEX[i]) }), NOTE_CAP);
+    box.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    box.frustumCulled = false;
+    box.count = 0;
+    box.visible = false;
+    scene.add(box);
+
+    SC.notePools.push({ inst, mat, dummy: new THREE.Object3D(), halo, haloMat, box, boxDummy: new THREE.Object3D() });
   }
 }
 
@@ -2527,6 +3035,14 @@ function updateFx(dt) {
 
 /* ============================ GAME ============================ */
 const HIT_W = [0.046, 0.092, 0.145]; /* PERFECT / GREAT / GOOD */
+const COL_HEMI_BASE = new THREE.Color(0x5b4a96), COL_HEMI_SUN = new THREE.Color(0xff9a5a);
+const COL_GND_BASE = new THREE.Color(0x0d0718), COL_GND_SUN = new THREE.Color(0x3a1626);
+const COL_KEY_BASE = new THREE.Color(0xd9c6ff), COL_KEY_SUN = new THREE.Color(0xffc38a);
+const COL_RIM_BASE = new THREE.Color(0x5fd8ff), COL_RIM_SUN = new THREE.Color(0xff7a6a);
+const COL_SPOT_BASE = new THREE.Color(0xd8b6ff), COL_SPOT_SUN = new THREE.Color(0xffb070);
+const COL_MOOD_BASE = new THREE.Color(0x9a6bff), COL_MOOD_SUN = new THREE.Color(0xff8a4a);
+const COL_MASCOT_BASE = new THREE.Color(0xd7bcff), COL_MASCOT_SUN = new THREE.Color(0xffb06a);
+const COL_EMIS_SUN = new THREE.Color(0xff6a2a);
 const MISS_W = 0.175;
 const FEVER_TIME = 9;
 
@@ -2534,6 +3050,7 @@ const G = {
   screen: 'title',
   songIndex: 0,
   diff: 1,
+  fun: 0,
   scroll: 1,
   offsetMs: 0,
   notes: [],
@@ -2556,6 +3073,11 @@ const G = {
   laneFlash: [0, 0, 0, 0],
   camShake: 0,
   shakeSeed: 0,
+  shake: 0,
+  pixel: 0,
+  pixelForce: null,
+  sunForce: null,
+  lastStepIdx: -1,
   auto: false,
   ended: false,
   presses: 0,
@@ -2997,9 +3519,21 @@ function selectSong(i) {
 }
 
 function selectDiff(d) {
-  G.diff = clamp(d, 0, 2);
+  G.diff = clamp(d, 0, 3);
   $$('#diffSeg button').forEach((b) => b.classList.toggle('on', +b.dataset.diff === G.diff));
+  const row = $('#funRow');
+  if (row) row.classList.toggle('on', G.diff === 3);
+  if (G.diff === 3) selectFun(G.fun);
+  const app = $('#app');
+  if (app) app.dataset.fun = G.diff === 3 ? '1' : '0';
   savePrefs();
+}
+
+function selectFun(f) {
+  G.fun = clamp(f, 0, 1);
+  $$('#funSeg button').forEach((b) => b.classList.toggle('on', +b.dataset.fun === G.fun));
+  const app = $('#app');
+  if (app) app.dataset.fun = G.diff === 3 ? '1' : '0';
 }
 
 function selectSpeed(v) {
@@ -3012,7 +3546,7 @@ function selectSpeed(v) {
 function savePrefs() {
   try {
     localStorage.setItem('pickle-rhythm-v1', JSON.stringify({
-      song: G.songIndex, diff: G.diff, scroll: G.scroll, vol: AUDIO.vol, sfx: AUDIO.sfxOn, off: G.offsetMs,
+      song: G.songIndex, diff: G.diff, fun: G.fun, scroll: G.scroll, vol: AUDIO.vol, sfx: AUDIO.sfxOn, off: G.offsetMs,
     }));
   } catch (e) { /* file:// 등 */ }
 }
@@ -3021,6 +3555,7 @@ function loadPrefs() {
   try { p = JSON.parse(localStorage.getItem('pickle-rhythm-v1') || 'null'); } catch (e) { p = null; }
   if (!p) return;
   if (typeof p.song === 'number') selectSong(p.song);
+  if (typeof p.fun === 'number') G.fun = clamp(p.fun, 0, 1);
   if (typeof p.diff === 'number') selectDiff(p.diff);
   if (typeof p.scroll === 'number') selectSpeed(p.scroll);
   if (typeof p.vol === 'number') {
@@ -3053,7 +3588,7 @@ async function startGame() {
     AUDIO.musicBus.gain.setValueAtTime(0.92, ctx.currentTime);
   }
 
-  G.notes = buildChart(song, G.diff).map((n) => ({ ...n, hit: false, judged: false, missed: false }));
+  G.notes = buildChart(song, G.diff, G.fun).map((n) => ({ ...n, hit: false, judged: false, missed: false }));
   G.counts = [0, 0, 0, 0];
   G.judged = 0;
   G.accSum = 0;
@@ -3069,6 +3604,21 @@ async function startGame() {
   G.lastBeat = -1;
   G.laneFlash = [0, 0, 0, 0];
   G.time = 0;
+  G.pixel = 0;
+  G.shake = 0;
+  G.lastStepIdx = -1;
+  G.pixelForce = null;
+  SUNSET.acc = 0;
+  const appEl = $('#app');
+  appEl.dataset.pixel = '0';
+  appEl.dataset.fun = G.diff === 3 ? '1' : '0';
+  appEl.style.setProperty('--px', '0');
+  appEl.style.setProperty('--hx', '0px');
+  appEl.style.setProperty('--hy', '0px');
+  appEl.style.setProperty('--skx', '0px');
+  appEl.style.setProperty('--sky', '0px');
+  appEl.style.setProperty('--pxx', '0px');
+  appEl.style.setProperty('--pxy', '0px');
 
   let lat = 0;
   if (ctx) {
@@ -3352,7 +3902,11 @@ function update(dt, wall) {
     /* 종료 */
     if (G.time > songDuration(song) + 0.45) finishSong();
 
+    updateFunGimmick(dt, song);
     updateHUD(dt);
+  } else {
+    G.shake = damp(G.shake, 0, 6, dt);
+    if (G.screen !== 'pause') G.pixel = damp(G.pixel, 0, 4.5, dt);
   }
 
   const spb = 60 / song.bpm;
@@ -3365,6 +3919,45 @@ function update(dt, wall) {
   updateNotesVisual(G.screen === 'play' || G.screen === 'pause' ? G.time : -99);
   updateFx(dt);
   updateSyncVisual();
+}
+
+/* ------------------- FUN 모드: 화면 진동 · 도트 변신 ------------------- */
+function updateFunGimmick(dt, song) {
+  const funMode = G.diff === 3;
+  const dur = songDuration(song);
+  const pr = clamp(G.time / dur, 0, 1);
+
+  /* 후반 55%부터 서서히 도트 노을로 */
+  let target = 0;
+  if (funMode) {
+    target = clamp((pr - 0.55) / 0.12, 0, 1);
+    target = target * target * (3 - 2 * target);
+  }
+  if (G.pixelForce != null) target = clamp(G.pixelForce, 0, 1);
+  G.pixel = damp(G.pixel, target, 2.8, dt);
+
+  /* 섹션 기반 화면 진동: 킥 · 스네어 · 드롭마다 */
+  if (funMode) {
+    const stepDur = 60 / song.bpm / 4;
+    const si = Math.floor((G.time + 0.002) / stepDur);
+    if (si !== G.lastStepIdx) {
+      G.lastStepIdx = si;
+      const bar = Math.floor(si / 16);
+      const step = si - bar * 16;
+      if (bar >= 0 && bar < song.bars) {
+        const sd = stepData(song, bar, step);
+        const sec = sd.sec;
+        const heavy = sd.kick || sd.snare || sd.fx === 'crash';
+        if (heavy) {
+          let amp = sec === 'drop' || sec === 'final' ? 1 : sec === 'build' ? 0.52 : sec === 'verse' ? 0.26 : 0.14;
+          if (sd.fx === 'crash') amp = Math.max(amp, 1.25);
+          if (!sd.kick) amp *= 0.62;
+          G.shake = Math.max(G.shake, amp * (G.fun ? 1.2 : 0.92));
+        }
+      }
+    }
+  }
+  G.shake = damp(G.shake, 0, funMode ? 4.4 : 7, dt);
 }
 
 /* ---------------------------- HUD ---------------------------- */
@@ -3438,6 +4031,13 @@ function updateNotesVisual(t) {
     pool.dummy.scale.set(sc * (1 + near * 0.3), sc * (1 + near * 0.2), 1);
     pool.dummy.updateMatrix();
     pool.halo.setMatrixAt(counts[lane], pool.dummy.matrix);
+
+    /* 8비트 블록 노트 */
+    pool.boxDummy.position.set(LANE_X[lane], NOTE_Y, z);
+    pool.boxDummy.rotation.set(0, 0, 0);
+    pool.boxDummy.scale.set(sc, sc, sc);
+    pool.boxDummy.updateMatrix();
+    pool.box.setMatrixAt(counts[lane], pool.boxDummy.matrix);
     counts[lane]++;
   }
   for (let l = 0; l < 4; l++) {
@@ -3446,15 +4046,104 @@ function updateNotesVisual(t) {
     pool.inst.instanceMatrix.needsUpdate = true;
     pool.halo.count = counts[l];
     pool.halo.instanceMatrix.needsUpdate = true;
+    pool.box.count = counts[l];
+    pool.box.instanceMatrix.needsUpdate = true;
+  }
+}
+
+const SHAKE_CSS = { hx: 99, hy: 99, px: -1, mode: -1 };
+function applyShakeCss(fs, px, wall) {
+  const app = $('#app');
+  if (!app) return;
+  const hx = Math.round(Math.sin(wall * 57.1) * 3.6 * fs * 100) / 100;
+  const hy = Math.round(Math.cos(wall * 44.3) * 2.9 * fs * 100) / 100;
+  if (Math.abs(hx - SHAKE_CSS.hx) > 0.2 || Math.abs(hy - SHAKE_CSS.hy) > 0.2) {
+    SHAKE_CSS.hx = hx; SHAKE_CSS.hy = hy;
+    app.style.setProperty('--hx', hx.toFixed(1) + 'px');
+    app.style.setProperty('--hy', hy.toFixed(1) + 'px');
+    app.style.setProperty('--skx', (hx * 0.55).toFixed(1) + 'px');
+    app.style.setProperty('--sky', (hy * 0.5).toFixed(1) + 'px');
+    app.style.setProperty('--pxx', (hx * 0.45).toFixed(1) + 'px');
+    app.style.setProperty('--pxy', (hy * 0.4).toFixed(1) + 'px');
+  }
+  const pxc = Math.round(px * 100) / 100;
+  if (pxc !== SHAKE_CSS.px) {
+    SHAKE_CSS.px = pxc;
+    app.style.setProperty('--px', pxc.toFixed(2));
+    const veil = $('#pixelVeil');
+    if (veil) veil.style.opacity = (pxc * 0.55).toFixed(2);
+  }
+  const mode = px > 0.3 ? 1 : 0;
+  if (mode !== SHAKE_CSS.mode) {
+    SHAKE_CSS.mode = mode;
+    app.dataset.pixel = String(mode);
   }
 }
 
 function updateStage(dt, wall, pulse, bp) {
   const feverPulse = G.fever ? 1 : 0;
+  const px = clamp(G.pixel, 0, 1);
   if (SC.floorMat) {
     SC.floorMat.uniforms.uTime.value = wall;
     SC.floorMat.uniforms.uBeat.value = pulse * 0.85 + (G.fever ? 0.4 : 0);
     SC.floorMat.uniforms.uEnergy.value = damp(SC.floorMat.uniforms.uEnergy.value, G.fever ? 1 : G.energy / 100, 3, dt);
+    SC.floorMat.uniforms.uPixel.value = px;
+  }
+  if (SC.skyMat) SC.skyMat.uniforms.uPixel.value = px;
+  if (PIXEL.pass) {
+    PIXEL.pass.uniforms.uMix.value = px;
+    PIXEL.pass.uniforms.uWarm.value = px * 0.85;
+  }
+
+  /* 도트 노을 캔버스 갱신 (초당 ~24회) */
+  if (px > 0.01) {
+    SUNSET.acc += dt;
+    if (SUNSET.acc >= 1 / 24) {
+      SUNSET.acc = 0;
+      const dur = songDuration(SONGS[G.songIndex]);
+      const pr = clamp((G.screen === 'play' ? G.time : 0) / dur, 0, 1);
+      const desc = clamp((pr - 0.55) / 0.42, 0, 1);
+      /* 지평선은 실제 3D 지평선(카메라 높이)에 맞춘다 */
+      camera.updateMatrixWorld();
+      if (!SUNSET._v) SUNSET._v = new THREE.Vector3();
+      SUNSET._v.set(0, camera.position.y, -8000).project(camera);
+      SUNSET.hz = clamp(0.5 - SUNSET._v.y * 0.5, 0.12, 0.62);
+      const sunH = G.sunForce != null ? G.sunForce : clamp(0.44 - 0.36 * desc, 0.07, 0.46);
+      drawSunset(wall, sunH);
+    }
+  }
+
+  /* 3D 장면을 노을빛으로 물들이기 */
+  if (px > 0.001) {
+    if (SC.hemi) {
+      SC.hemi.color.copy(COL_HEMI_BASE).lerp(COL_HEMI_SUN, px);
+      SC.hemi.groundColor.copy(COL_GND_BASE).lerp(COL_GND_SUN, px);
+      SC.hemi.intensity = lerp(0.9, 1.3, px);
+    }
+    if (SC.key) {
+      SC.key.color.copy(COL_KEY_BASE).lerp(COL_KEY_SUN, px);
+      SC.key.intensity = lerp(1.25, 1.6, px);
+    }
+    if (SC.rim) {
+      SC.rim.color.copy(COL_RIM_BASE).lerp(COL_RIM_SUN, px);
+      SC.rim.intensity = lerp(1.2, 0.85, px);
+    }
+    if (SC.spot) SC.spot.color.copy(COL_SPOT_BASE).lerp(COL_SPOT_SUN, px);
+    if (SC.mood) SC.mood.color.copy(COL_MOOD_BASE).lerp(COL_MOOD_SUN, px);
+  } else {
+    if (SC.hemi) { SC.hemi.color.copy(COL_HEMI_BASE); SC.hemi.groundColor.copy(COL_GND_BASE); SC.hemi.intensity = 0.9; }
+    if (SC.key) { SC.key.color.copy(COL_KEY_BASE); SC.key.intensity = 1.25; }
+    if (SC.rim) { SC.rim.color.copy(COL_RIM_BASE); SC.rim.intensity = 1.2; }
+    if (SC.spot) SC.spot.color.copy(COL_SPOT_BASE);
+    if (SC.mood) SC.mood.color.copy(COL_MOOD_BASE);
+  }
+
+  /* 노트: 캡슐 ↔ 8비트 블록 */
+  const useBox = px > 0.42;
+  for (const pool of SC.notePools) {
+    if (pool.inst.visible === useBox) pool.inst.visible = !useBox;
+    if (pool.box.visible !== useBox) pool.box.visible = useBox;
+    pool.haloMat.opacity = 0.30 * (1 - px * 0.78);
   }
   if (SC.skyMat) SC.skyMat.uniforms.uPulse.value = damp(SC.skyMat.uniforms.uPulse.value, pulse * 0.5 + feverPulse * 0.5, 8, dt);
 
@@ -3462,15 +4151,20 @@ function updateStage(dt, wall, pulse, bp) {
   for (let i = 0; i < SC.archMats.length; i++) {
     const m = SC.archMats[i];
     const k = i / SC.archMats.length;
-    m.opacity = (0.07 + 0.10 * pulse) * (1 - k * 0.5) * (G.fever ? 1.4 : 1);
+    m.opacity = (0.07 + 0.10 * pulse) * (1 - k * 0.5) * (G.fever ? 1.4 : 1) * (1 - px * 0.72);
   }
   if (SC.pillars) {
     for (let i = 0; i < SC.pillars.length; i++) {
       const p = SC.pillars[i];
-      p.mat.opacity = 0.14 + pulse * 0.34 + (G.fever ? 0.22 : 0) + Math.sin(wall * 2 + p.seed) * 0.03;
+      p.mat.opacity = (0.14 + pulse * 0.34 + (G.fever ? 0.22 : 0) + Math.sin(wall * 2 + p.seed) * 0.03) * (1 - px * 0.6);
     }
   }
-  if (SC.moon) SC.moon.mat.opacity = 0.34 + pulse * 0.10 + (G.fever ? 0.2 : 0);
+  if (SC.moon) SC.moon.mat.opacity = (0.34 + pulse * 0.10 + (G.fever ? 0.2 : 0)) * (1 - px * 0.9);
+  if (SC.stars) SC.stars.material.opacity = 0.8 * (1 - px);
+  if (SC.railMats) {
+    SC.railMats[0].opacity = 0.55 * (1 - px * 0.6);
+    SC.railMats[1].opacity = 0.6 * (1 - px * 0.55);
+  }
 
   /* 레인 라이트 */
   for (let i = 0; i < SC.laneLights.length; i++) {
@@ -3503,14 +4197,21 @@ function updateStage(dt, wall, pulse, bp) {
   G.camShake = damp(shake, 0, 8, dt);
   const sx = (Math.sin(wall * 61.7) + Math.sin(wall * 37.3)) * 0.5 * shake;
   const sy = (Math.sin(wall * 53.1) + Math.sin(wall * 29.7)) * 0.5 * shake;
+  /* FUN 모드 섹션 진동: 카메라 + 화면 컨테이너 + HUD */
+  const fs = REDUCED ? 0 : G.shake;
+  const fsx = (Math.sin(wall * 47.3) + Math.sin(wall * 29.1) * 0.6) * 0.30 * fs;
+  const fsy = (Math.cos(wall * 53.7) + Math.cos(wall * 31.3) * 0.6) * 0.22 * fs;
   const title = G.screen === 'title';
   const C = (window.innerWidth / window.innerHeight) < 0.95 ? CAM.port : CAM.land;
   const drift = title ? Math.sin(wall * 0.34) * 0.5 : 0;
   const driftY = title ? Math.sin(wall * 0.27) * 0.18 : 0;
-  camera.position.x = damp(camera.position.x, C.p[0] + sx + drift, 4, dt);
-  camera.position.y = damp(camera.position.y, C.p[1] + sy + driftY, 4, dt);
+  camera.position.x = damp(camera.position.x, C.p[0] + sx + drift + fsx, 4, dt);
+  camera.position.y = damp(camera.position.y, C.p[1] + sy + driftY + fsy, 4, dt);
   camera.position.z = damp(camera.position.z, C.p[2] - (G.fever ? 0.45 : 0), 3, dt);
   camera.lookAt(drift * 0.3, C.t[1] + (title ? Math.sin(wall * 0.4) * 0.18 : 0), C.t[2]);
+  camera.rotation.z += Math.sin(wall * 62.0) * 0.011 * fs;
+
+  applyShakeCss(fs, px, wall);
 
   /* 마스코트 */
   updateMascot(dt, wall, pulse, bp);
@@ -3518,8 +4219,10 @@ function updateStage(dt, wall, pulse, bp) {
   if (SC.stars) SC.stars.rotation.y = wall * 0.008;
 
   /* 블룸 */
-  const targetBloom = (G.fever ? 1.0 : 0.42) + pulse * 0.05;
+  const targetBloom = ((G.fever ? 1.0 : 0.42) + pulse * 0.05) * (1 - px * 0.86);
   bloomPass.strength = damp(bloomPass.strength, targetBloom, 4, dt);
+  bloomPass.threshold = lerp(0.9, 1.30, px);
+  renderer.toneMappingExposure = lerp(1.08, 0.88, px);
 }
 
 function updateMascot(dt, wall, pulse, bp) {
@@ -3561,22 +4264,25 @@ function updateMascot(dt, wall, pulse, bp) {
   /* 감정 색 */
   const feverMix = G.fever ? 1 : 0;
   const missMix = M.missT;
-  const base = new THREE.Color(0xd7bcff);
+  const base = COL_MASCOT_BASE;
   const gold = new THREE.Color(0xffd9a0);
   const blue = new THREE.Color(0xa8b6ff);
-  const c = base.clone().lerp(gold, feverMix * 0.85).lerp(blue, missMix * 0.5);
+  const c = base.clone().lerp(gold, feverMix * 0.85).lerp(blue, missMix * 0.5).lerp(COL_MASCOT_SUN, G.pixel * 0.75);
   M.bodyMat.color.lerp(c, 1 - Math.exp(-6 * dt));
   M.bodyMat.emissiveIntensity = 0.32 + M.hitPulse * 0.5 + (G.fever ? 0.22 : 0) + pulse * 0.1;
   M.bodyMat.emissive.setHex(G.fever ? 0xc07a20 : 0x6d3fc0);
+  if (G.pixel > 0.001) M.bodyMat.emissive.lerp(COL_EMIS_SUN, G.pixel * 0.8);
 
   M.halo.rotation.z += dt * (0.6 + M.comboGlow * 2.2 + (G.fever ? 3 : 0));
   const hs = 1 + M.comboGlow * 0.18 + (G.fever ? 0.2 : 0);
   M.halo.scale.set(hs, hs, 1);
   M.haloMat.opacity = 0.18 + pulse * 0.12 + M.comboGlow * 0.35 + (G.fever ? 0.25 : 0);
   M.haloMat.color.setHex(G.fever ? 0xffc46b : 0xb98cff);
+  if (G.pixel > 0.001) M.haloMat.color.lerp(COL_MASCOT_SUN, G.pixel * 0.8);
 
   M.auraMat.opacity = 0.22 + pulse * 0.12 + M.hitPulse * 0.2 + (G.fever ? 0.18 : 0);
   M.auraMat.color.setHex(G.fever ? 0xffb45e : 0xa678ff);
+  if (G.pixel > 0.001) M.auraMat.color.lerp(COL_MOOD_SUN, G.pixel * 0.8);
   const as = 5.8 + pulse * 0.4 + M.hitPulse * 0.7 + (G.fever ? 1.4 : 0);
   M.aura.scale.set(as, as, 1);
 }
@@ -3589,6 +4295,12 @@ function bindUI() {
   $$('#diffSeg button').forEach((b) => b.addEventListener('click', () => {
     if (AUDIO.ctx) AUDIO.uiClick();
     selectDiff(+b.dataset.diff);
+  }));
+  $$('#funSeg button').forEach((b) => b.addEventListener('click', () => {
+    if (AUDIO.ctx) AUDIO.uiClick();
+    selectFun(+b.dataset.fun);
+    const app = $('#app');
+    if (app) app.dataset.fun = G.diff === 3 ? '1' : '0';
   }));
   $$('#speedSeg button').forEach((b) => b.addEventListener('click', () => {
     if (AUDIO.ctx) AUDIO.uiClick();
@@ -3680,7 +4392,7 @@ function bindUI() {
       if (k === 'arrowdown' || k === 's') { e.preventDefault(); selectSong(G.songIndex + 1); return; }
       if (k === 'arrowleft' || k === 'a') { e.preventDefault(); selectDiff(G.diff - 1); return; }
       if (k === 'arrowright') { e.preventDefault(); selectDiff(G.diff + 1); return; }
-      if (k === '1' || k === '2' || k === '3') { e.preventDefault(); selectDiff(+k - 1); return; }
+      if (k === '1' || k === '2' || k === '3' || k === '4') { e.preventDefault(); selectDiff(+k - 1); return; }
       if (k === 'enter' || k === ' ') { e.preventDefault(); startGame(); return; }
     } else if (G.screen === 'result') {
       if (k === 'enter' || k === ' ') { e.preventDefault(); startGame(); return; }
@@ -3717,7 +4429,12 @@ async function resumeCtxThen(fn) {
 /* ---------------------------- debug API ---------------------------- */
 window.PICKLE = {
   G, SC, AUDIO, MUSIC, SONGS,
-  start: (i, d) => { if (typeof i === 'number') G.songIndex = i; if (typeof d === 'number') G.diff = d; return startGame(); },
+  start: (i, d, f) => {
+    if (typeof i === 'number') G.songIndex = i;
+    if (typeof d === 'number') G.diff = clamp(d, 0, 3);
+    if (typeof f === 'number') G.fun = clamp(f, 0, 1);
+    return startGame();
+  },
   press: pressLane,
   pause: pauseGame,
   resume: resumeGame,
@@ -3744,7 +4461,10 @@ window.PICKLE = {
       applyDisabled: SYNC.applyBtn ? SYNC.applyBtn.disabled : null,
     }),
   },
-  chart: () => buildChart(SONGS[G.songIndex], G.diff).length,
+  chart: () => buildChart(SONGS[G.songIndex], G.diff, G.fun).length,
+  fun: (v) => { selectFun(v); return G.fun; },
+  setDiff: (d) => { selectDiff(d); return G.diff; },
+  forcePixel: (v, sunH) => { G.pixelForce = v; G.sunForce = sunH == null ? null : sunH; return G.pixel; },
   snapshot: () => ({
     screen: G.screen,
     time: +G.time.toFixed(3),
@@ -3765,6 +4485,10 @@ window.PICKLE = {
     fps: lastFps,
     lang: LANG.cur,
     offsetMs: G.offsetMs,
+    diff: G.diff,
+    fun: G.fun,
+    pixel: +G.pixel.toFixed(3),
+    shake: +G.shake.toFixed(3),
   }),
 };
 let lastFps = 0;
