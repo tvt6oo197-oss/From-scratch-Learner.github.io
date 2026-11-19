@@ -1,0 +1,2904 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07040f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="피클 3D 리듬게임 — Min과 함께 달리는 네온 리듬 하이웨이. WebGL 3D, 절차적 신스 음악, D F J K / 터치 4키.">
+<title>피클 3D 리듬게임 · Pickle Rhythm</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --lilac:#c9a6ff;
+  --lilac-deep:#8b5cf6;
+  --cyan:#7fe9ff;
+  --mint:#8dffd6;
+  --pink:#ff9fdc;
+  --gold:#ffd479;
+  --ink:#f6f0ff;
+  --dim:#b3a4d4;
+  --dim2:#7d6f9e;
+  --panel:rgba(19,12,38,.68);
+  --panel-2:rgba(30,20,58,.55);
+  --stroke:rgba(201,166,255,.20);
+  --stroke-2:rgba(201,166,255,.10);
+  --lane0:#c6a3ff;
+  --lane1:#78e9ff;
+  --lane2:#8dffd6;
+  --lane3:#ffaad8;
+  --font:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --padh:clamp(94px,17vh,168px);
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+}
+html,body{height:100%;margin:0;padding:0}
+html{background:#07040f;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font);
+  color:var(--ink);
+  background:#07040f;
+  overflow:hidden;
+  overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
+}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+input{font-family:inherit}
+#app{position:fixed;inset:0;overflow:hidden;isolation:isolate}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* ---------- ambient overlays ---------- */
+#vignette{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:
+    radial-gradient(120% 80% at 50% 46%, rgba(0,0,0,0) 30%, rgba(4,2,12,.55) 78%, rgba(3,1,8,.9) 100%),
+    linear-gradient(to bottom, rgba(7,4,15,.55), rgba(7,4,15,0) 22%, rgba(7,4,15,0) 58%, rgba(7,4,15,.75));
+  transition:opacity .5s ease;
+}
+#feverGlow{
+  position:absolute;inset:0;pointer-events:none;z-index:3;opacity:0;
+  background:
+    radial-gradient(80% 60% at 50% 100%, rgba(255,180,90,.30), rgba(255,120,200,.13) 45%, transparent 72%),
+    radial-gradient(70% 50% at 50% 0%, rgba(255,220,140,.16), transparent 70%);
+  mix-blend-mode:screen;
+  transition:opacity .35s ease;
+}
+#app[data-fever="1"] #feverGlow{opacity:1}
+
+/* ---------- HUD ---------- */
+.layer{position:absolute;inset:0;pointer-events:none;z-index:6}
+#hud{opacity:0;transition:opacity .35s ease}
+#app[data-screen="play"] #hud,#app[data-screen="pause"] #hud,#app[data-screen="result"] #hud{opacity:1}
+
+.hud-top{
+  position:absolute;top:0;left:0;right:0;
+  padding:calc(10px + env(safe-area-inset-top)) clamp(12px,2.4vw,30px) 0;
+  display:flex;align-items:flex-start;gap:14px;
+}
+.hud-score{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hud-score .k{
+  font-size:9px;letter-spacing:.34em;color:var(--dim2);font-weight:700;
+}
+.hud-score .v{
+  font-family:var(--mono);font-size:clamp(22px,3.6vw,34px);font-weight:700;
+  letter-spacing:.02em;line-height:1;
+  color:#fff;
+  text-shadow:0 0 26px rgba(201,166,255,.55),0 2px 10px rgba(0,0,0,.5);
+  font-variant-numeric:tabular-nums;
+}
+.hud-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:2px}
+.hud-song{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;letter-spacing:.16em;color:#ded2ff;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.hud-song b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.hud-song em{font-style:normal;font-size:9px;padding:2px 7px;border-radius:99px;border:1px solid var(--stroke);color:var(--lilac);letter-spacing:.18em;background:rgba(139,92,246,.12)}
+.hud-acc{display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.hud-acc .sep{width:1px;height:9px;background:var(--stroke)}
+.progress{height:3px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;max-width:min(520px,56vw);width:100%;margin:0 auto;position:relative}
+.progress-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--lilac) 55%,var(--pink));box-shadow:0 0 12px rgba(201,166,255,.8)}
+
+.hud-right{display:flex;gap:8px;flex:0 0 auto}
+.round-btn{
+  pointer-events:auto;flex:0 0 auto;width:42px;height:42px;border-radius:14px;
+  display:grid;place-items:center;font-size:13px;color:#e9deff;
+  background:rgba(24,15,46,.55);border:1px solid var(--stroke);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:transform .12s ease,background .2s;
+}
+.round-btn:active{transform:scale(.92);background:rgba(60,38,110,.7)}
+
+.combo-box{
+  position:absolute;left:clamp(14px,3vw,42px);top:41%;transform:translateY(-50%) scale(.85);
+  display:flex;flex-direction:column;align-items:flex-start;opacity:0;
+  transition:opacity .2s ease;
+}
+.combo-box.on{opacity:1}
+.combo-box span{
+  font-family:var(--mono);font-weight:800;
+  font-size:clamp(40px,6vw,64px);line-height:.9;
+  font-variant-numeric:tabular-nums;
+  color:#fff;
+  text-shadow:0 0 30px rgba(201,166,255,.85),0 0 70px rgba(139,92,246,.55);
+  transform:scale(1);
+}
+.combo-box small{font-size:8.5px;letter-spacing:.42em;color:var(--lilac);margin-top:4px;font-weight:700}
+.combo-box.pop span{animation:comboPop .22s cubic-bezier(.2,1.6,.5,1)}
+@keyframes comboPop{0%{transform:scale(1.28)}100%{transform:scale(1)}}
+
+.judge-layer{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.judge{
+  position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);
+  font-family:var(--mono);font-weight:800;letter-spacing:.14em;
+  font-size:clamp(18px,3.2vw,30px);
+  animation:judgeOut .62s ease-out forwards;
+  white-space:nowrap;
+}
+.judge.perfect{color:#fff;text-shadow:0 0 18px var(--gold),0 0 46px rgba(255,212,121,.8),0 0 90px rgba(255,170,80,.4)}
+.judge.great{color:#dff9ff;text-shadow:0 0 16px var(--cyan),0 0 42px rgba(120,233,255,.65)}
+.judge.good{color:#e2fff2;text-shadow:0 0 16px var(--mint),0 0 36px rgba(141,255,214,.5)}
+.judge.miss{color:#ffb3c8;text-shadow:0 0 16px rgba(255,80,130,.9),0 0 44px rgba(255,60,120,.45)}
+@keyframes judgeOut{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}
+  16%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  62%{opacity:1;transform:translate(-50%,-54%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-86%) scale(.94)}
+}
+
+.fever-wrap{
+  position:absolute;left:50%;top:calc(78px + env(safe-area-inset-top));
+  transform:translateX(-50%);width:min(430px,58vw);
+  display:flex;flex-direction:column;gap:4px;
+  opacity:.9;
+}
+.fever-label{display:flex;justify-content:space-between;align-items:center;font-size:8.5px;letter-spacing:.36em;color:var(--dim2);font-weight:700}
+.fever-label b{font-family:var(--mono);letter-spacing:.08em;color:var(--dim);font-weight:600}
+.fever-bar{
+  position:relative;height:7px;border-radius:99px;overflow:hidden;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.5);
+}
+#feverFill{
+  height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#5ee7ff,#c9a6ff 45%,#ff9fdc 78%,#ffd479);
+  box-shadow:0 0 16px rgba(201,166,255,.75);
+  transition:width .12s linear;
+}
+.fever-bar i{
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(7,4,15,.55) 0 1px,transparent 1px 25%);
+  opacity:.8;
+}
+#app[data-fever="1"] .fever-bar{box-shadow:0 0 26px rgba(255,180,90,.65),inset 0 1px 3px rgba(0,0,0,.4)}
+#app[data-fever="1"] .fever-label b{color:var(--gold)}
+
+/* ---------- touch pads ---------- */
+.pads{
+  position:absolute;left:0;right:0;bottom:0;z-index:5;
+  display:none;height:var(--padh);
+  padding:0 6px calc(8px + env(safe-area-inset-bottom));
+  gap:6px;
+  pointer-events:none;
+}
+#app[data-screen="play"] .pads{display:flex}
+.pad{
+  pointer-events:auto;flex:1 1 0;position:relative;min-width:0;
+  border-radius:18px;
+  background:linear-gradient(to top,var(--pc-bg),rgba(255,255,255,.025) 66%,rgba(255,255,255,0) 100%);
+  border:1px solid var(--pc-line);
+  box-shadow:0 -14px 34px -18px var(--pc-glow),inset 0 1px 0 rgba(255,255,255,.12);
+  transition:background .09s ease,box-shadow .09s ease,transform .09s ease;
+  touch-action:none;overflow:hidden;
+}
+.pad::after{
+  content:"";position:absolute;left:10%;right:10%;top:0;height:2.5px;border-radius:3px;
+  background:var(--pc);opacity:.85;transition:opacity .09s,height .09s,box-shadow .09s;
+}
+.pad .pad-key{
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+  font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.1em;
+  color:var(--pc);opacity:.9;transition:opacity .1s,transform .1s;
+  text-shadow:0 0 14px var(--pc-glow);
+}
+.pad.on{
+  background:linear-gradient(to top,var(--pc-bg2),rgba(255,255,255,.05) 70%,rgba(255,255,255,0) 100%);
+  box-shadow:0 0 42px -4px var(--pc-glow),inset 0 0 34px var(--pc-glow),inset 0 1px 0 rgba(255,255,255,.2);
+  transform:translateY(2px);
+}
+.pad.on::after{opacity:1;height:4px;box-shadow:0 0 20px var(--pc),0 0 46px var(--pc-glow)}
+.pad.on .pad-key{opacity:1;transform:translateX(-50%) scale(1.1)}
+.pad[data-lane="0"]{--pc:var(--lane0);--pc-glow:rgba(198,163,255,.6);--pc-bg:rgba(198,163,255,.20);--pc-bg2:rgba(198,163,255,.42);--pc-line:rgba(198,163,255,.34)}
+.pad[data-lane="1"]{--pc:var(--lane1);--pc-glow:rgba(120,233,255,.55);--pc-bg:rgba(120,233,255,.17);--pc-bg2:rgba(120,233,255,.38);--pc-line:rgba(120,233,255,.3)}
+.pad[data-lane="2"]{--pc:var(--lane2);--pc-glow:rgba(141,255,214,.55);--pc-bg:rgba(141,255,214,.17);--pc-bg2:rgba(141,255,214,.38);--pc-line:rgba(141,255,214,.3)}
+.pad[data-lane="3"]{--pc:var(--lane3);--pc-glow:rgba(255,170,216,.55);--pc-bg:rgba(255,170,216,.19);--pc-bg2:rgba(255,170,216,.4);--pc-line:rgba(255,170,216,.32)}
+
+/* ---------- overlays ---------- */
+.overlay{
+  position:absolute;inset:0;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:radial-gradient(115% 95% at 50% 42%,rgba(10,5,24,.42),rgba(6,3,14,.80) 72%);
+  backdrop-filter:blur(7px) saturate(115%);-webkit-backdrop-filter:blur(7px) saturate(115%);
+  transition:opacity .38s ease,visibility .38s ease;
+  overflow-y:auto;overscroll-behavior:contain;
+}
+#titleScreen{backdrop-filter:none;-webkit-backdrop-filter:none;background:radial-gradient(110% 90% at 50% 44%,rgba(9,4,22,.28),rgba(6,3,14,.72) 78%)}
+.overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+#pauseScreen,#resultScreen{background:radial-gradient(120% 100% at 50% 40%,rgba(12,6,28,.5),rgba(6,3,14,.82) 70%)}
+
+/* --- title --- */
+.title-wrap{width:min(760px,100%);display:flex;flex-direction:column;gap:clamp(12px,2.2vh,22px);margin:auto}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{
+  width:clamp(46px,7vw,62px);height:clamp(46px,7vw,62px);border-radius:50%;
+  position:relative;flex:0 0 auto;
+  background:radial-gradient(circle at 34% 28%,#efe0ff,#c9a6ff 42%,#8b5cf6 78%,#5b34b8);
+  box-shadow:0 0 28px rgba(160,110,255,.65),inset 0 -6px 14px rgba(40,10,90,.5),inset 0 4px 10px rgba(255,255,255,.4);
+  display:grid;place-items:center;
+  animation:markFloat 3.6s ease-in-out infinite;
+}
+.brand-mark::before{
+  content:"";width:44%;height:44%;border-radius:50%;
+  background:radial-gradient(circle at 50% 45%,#1a0b30,#2a1147);
+  box-shadow:inset 0 3px 8px rgba(0,0,0,.8);
+}
+.brand-mark::after{
+  content:"";position:absolute;left:26%;top:20%;width:16%;height:12%;border-radius:50%;
+  background:rgba(255,255,255,.85);filter:blur(1.5px);
+}
+@keyframes markFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
+.brand h1{
+  margin:0;font-size:clamp(26px,5.2vw,44px);letter-spacing:-.02em;line-height:1;
+  font-weight:800;
+  background:linear-gradient(100deg,#fff,#dcc8ff 42%,#9d7bff 72%,#7fe9ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px rgba(160,110,255,.45));
+}
+.brand h1 em{font-style:normal;font-size:.52em;letter-spacing:.06em;color:#7fe9ff;-webkit-text-fill-color:#7fe9ff;vertical-align:.28em;margin-left:.18em;opacity:.9}
+.brand-sub{margin:6px 0 0;font-size:10px;letter-spacing:.28em;color:var(--dim2);font-weight:600;text-transform:uppercase}
+
+.panel{
+  border-radius:22px;padding:clamp(14px,2.6vw,22px);
+  background:linear-gradient(160deg,rgba(41,26,78,.62),rgba(16,10,33,.78));
+  border:1px solid var(--stroke);
+  box-shadow:0 26px 60px -24px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.07);
+  display:flex;flex-direction:column;gap:clamp(10px,1.8vh,16px);
+  position:relative;overflow:hidden;
+}
+.panel::before{
+  content:"";position:absolute;inset:-40% -10% auto;height:70%;
+  background:radial-gradient(60% 100% at 20% 0%,rgba(160,110,255,.25),transparent 70%);
+  pointer-events:none;
+}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.panel-head h2{margin:0;font-size:12px;letter-spacing:.3em;color:var(--dim);font-weight:700;text-transform:uppercase}
+.hint{font-size:10px;color:var(--dim2);letter-spacing:.08em}
+
+.songs{display:flex;flex-direction:column;gap:8px}
+.song{
+  position:relative;display:flex;align-items:center;gap:12px;
+  padding:11px 13px;border-radius:14px;text-align:left;width:100%;
+  background:rgba(12,7,26,.52);border:1px solid rgba(255,255,255,.055);
+  transition:background .18s,border-color .18s,transform .18s;
+  pointer-events:auto;
+}
+.song:hover{background:rgba(36,22,68,.6);border-color:var(--stroke-2)}
+.song.sel{
+  background:linear-gradient(100deg,rgba(120,80,220,.34),rgba(30,18,60,.6));
+  border-color:rgba(201,166,255,.5);
+  box-shadow:0 0 0 1px rgba(201,166,255,.18),0 14px 34px -18px rgba(140,90,255,.9);
+}
+.song .chip{
+  width:34px;height:34px;border-radius:11px;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 35% 30%,var(--sc1),var(--sc2));
+  box-shadow:0 0 16px var(--sc-glow),inset 0 -4px 9px rgba(0,0,0,.45);
+}
+.song .chip::after{content:"";position:absolute;inset:0;border-radius:11px;border:1px solid rgba(255,255,255,.28)}
+.song .meta{flex:1;min-width:0}
+.song .meta b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song .meta span{display:block;font-size:10.5px;color:var(--dim2);letter-spacing:.06em;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song .bpm{
+  flex:0 0 auto;font-family:var(--mono);font-size:10px;color:var(--dim);
+  padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);
+  letter-spacing:.02em;text-align:center;line-height:1.25;
+}
+.song .bpm i{display:block;font-style:normal;font-size:7.5px;letter-spacing:.2em;color:var(--dim2)}
+.song.sel .bpm{border-color:rgba(201,166,255,.35);color:#fff}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row.opts{display:grid;grid-template-columns:1fr 1fr 1.1fr auto;gap:12px;align-items:end}
+.row.opts .field{flex:none}
+.field{display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:0}
+.field label{font-size:9.5px;letter-spacing:.2em;color:var(--dim2);font-weight:700;text-transform:uppercase}
+.field label b{color:var(--lilac);font-family:var(--mono);letter-spacing:.02em;margin-left:4px}
+.field .hint{display:none}
+.seg{display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(8,4,18,.6);border:1px solid rgba(255,255,255,.06)}
+.seg button{
+  flex:1;padding:7px 4px;border-radius:9px;font-size:10.5px;font-weight:700;letter-spacing:.12em;
+  color:var(--dim2);display:flex;flex-direction:column;align-items:center;gap:1px;
+  transition:color .16s,background .16s,box-shadow .16s;
+}
+.seg button small{font-size:8px;letter-spacing:.1em;opacity:.55;font-weight:600}
+.seg button.on{color:#fff;background:linear-gradient(180deg,rgba(160,110,255,.5),rgba(110,70,200,.42));box-shadow:0 0 16px rgba(140,90,255,.4),inset 0 1px 0 rgba(255,255,255,.22)}
+.seg.tiny button{padding:6px 2px;font-size:9.5px;letter-spacing:.06em}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;pointer-events:auto;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:99px;background:linear-gradient(90deg,rgba(201,166,255,.85),rgba(127,233,255,.5))}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#fff;margin-top:-5.5px;
+  box-shadow:0 0 10px rgba(201,166,255,.95),0 1px 4px rgba(0,0,0,.6);
+}
+input[type=range]::-moz-range-track{height:4px;border-radius:99px;background:rgba(201,166,255,.6)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 10px rgba(201,166,255,.9)}
+
+.switch{
+  width:52px;height:29px;border-radius:99px;background:rgba(8,4,18,.75);border:1px solid rgba(255,255,255,.1);
+  position:relative;pointer-events:auto;transition:background .2s,border-color .2s;
+}
+.switch span{
+  position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:50%;
+  background:linear-gradient(180deg,#8e7bb5,#5d4e80);
+  transition:transform .22s cubic-bezier(.3,1.5,.5,1),background .2s;
+}
+.switch.on{background:linear-gradient(90deg,rgba(110,70,200,.7),rgba(127,233,255,.45));border-color:rgba(201,166,255,.5)}
+.switch.on span{transform:translateX(23px);background:linear-gradient(180deg,#fff,#d9c9ff);box-shadow:0 0 14px rgba(201,166,255,.9)}
+
+.start-btn{
+  width:100%;padding:16px;border-radius:16px;position:relative;
+  font-size:16px;font-weight:800;letter-spacing:.26em;color:#150a2c;
+  background:linear-gradient(100deg,#dcc8ff,#c9a6ff 30%,#9fd8ff 72%,#a5ffe4);
+  box-shadow:0 12px 40px -12px rgba(160,110,255,.95),inset 0 1px 0 rgba(255,255,255,.8),inset 0 -3px 0 rgba(90,50,160,.35);
+  transition:transform .12s ease,box-shadow .2s ease,filter .2s;
+  pointer-events:auto;
+  overflow:hidden;
+}
+.start-btn::after{
+  content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.65),transparent 70%);
+  transform:translateX(-120%);animation:sheen 3.6s ease-in-out infinite;
+}
+@keyframes sheen{0%,62%{transform:translateX(-120%)}88%,100%{transform:translateX(120%)}}
+.start-btn small{font-size:9px;letter-spacing:.2em;opacity:.62;margin-left:8px;font-weight:700}
+.start-btn:active{transform:scale(.985);filter:brightness(1.08)}
+.start-btn[disabled]{opacity:.5;filter:grayscale(.4)}
+.title-foot{text-align:center;font-size:10.5px;color:var(--dim2);letter-spacing:.1em}
+
+/* ---------- modal (pause / result) ---------- */
+.modal{
+  width:min(430px,100%);margin:auto;
+  border-radius:24px;padding:clamp(20px,3.4vw,30px);
+  background:linear-gradient(165deg,rgba(41,26,78,.72),rgba(14,8,30,.88));
+  border:1px solid var(--stroke);
+  box-shadow:0 30px 80px -30px #000,inset 0 1px 0 rgba(255,255,255,.08);
+  display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+}
+.modal h2{margin:0;font-size:20px;letter-spacing:.04em;font-weight:800}
+.modal p{margin:0;font-size:11.5px;color:var(--dim);letter-spacing:.1em}
+.modal-btns{display:flex;flex-direction:column;gap:9px;width:100%;margin-top:6px}
+.ghost-btn{
+  width:100%;padding:13px;border-radius:14px;font-size:12px;font-weight:700;letter-spacing:.18em;
+  color:var(--dim);background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+  transition:background .16s,color .16s;pointer-events:auto;
+}
+.ghost-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.tiny-hint{font-size:9.5px!important;color:var(--dim2)!important;letter-spacing:.08em}
+
+/* --- result --- */
+.result{gap:10px}
+.rank-ring{
+  width:118px;height:118px;border-radius:50%;display:grid;place-items:center;position:relative;
+  background:conic-gradient(from -90deg,var(--gold) var(--p,0%),rgba(255,255,255,.07) 0);
+  box-shadow:0 0 46px rgba(255,200,110,.35);
+  animation:rankIn .7s cubic-bezier(.2,1.3,.4,1) both;
+}
+.rank-ring::before{content:"";position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2a1a4d,#120a26)}
+.rank-ring span{
+  position:relative;font-family:var(--mono);font-size:52px;font-weight:800;line-height:1;
+  background:linear-gradient(180deg,#fff,#ffd479);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(255,200,110,.75));
+}
+@keyframes rankIn{0%{transform:scale(.62) rotate(-24deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.result-song{font-size:10px!important;letter-spacing:.26em!important;color:var(--dim2)!important;text-transform:uppercase}
+.result-score{display:flex;flex-direction:column;align-items:center;line-height:1}
+.result-score span{font-family:var(--mono);font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em;
+  text-shadow:0 0 30px rgba(201,166,255,.6)}
+.result-score small{font-size:8.5px;letter-spacing:.4em;color:var(--dim2);margin-top:6px;font-weight:700}
+.result-stats{display:flex;width:100%;gap:8px;margin-top:2px}
+.result-stats div{
+  flex:1;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;padding:9px 4px;display:flex;flex-direction:column;gap:3px;
+}
+.result-stats b{font-family:var(--mono);font-size:15px;font-weight:700;color:#fff}
+.result-stats span{font-size:8.5px;letter-spacing:.14em;color:var(--dim2)}
+.judge-counts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.judge-counts div{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:13px;font-weight:700}
+.judge-counts div span{font-family:var(--font);font-size:8px;letter-spacing:.14em;font-weight:600;opacity:.75}
+.judge-counts .p{color:#ffe6a8}.judge-counts .g{color:#bff2ff}.judge-counts .d{color:#c8ffe8}.judge-counts .m{color:#ff9cb6}
+.fc-badge{
+  display:inline-block;padding:4px 12px;border-radius:99px;font-size:9px;font-weight:800;letter-spacing:.24em;
+  color:#1a0b2e;background:linear-gradient(100deg,#ffd479,#ffb36b);
+  box-shadow:0 0 24px rgba(255,190,90,.6);
+}
+
+/* ---------- boot ---------- */
+.boot{
+  position:absolute;inset:0;z-index:40;display:grid;place-items:center;gap:16px;
+  background:radial-gradient(circle at 50% 45%,#150a2e,#07040f 70%);
+  transition:opacity .5s ease,visibility .5s;
+}
+.boot.gone{opacity:0;visibility:hidden;pointer-events:none}
+.boot span{position:absolute;bottom:38%;font-size:10.5px;letter-spacing:.3em;color:var(--dim2)}
+.boot-ring{
+  width:54px;height:54px;border-radius:50%;
+  border:2px solid rgba(201,166,255,.18);border-top-color:var(--lilac);
+  animation:spin 1s linear infinite;box-shadow:0 0 30px rgba(160,110,255,.35);
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.boot.err .boot-ring{display:none}
+.boot.err span{position:static;max-width:320px;text-align:center;line-height:1.7;letter-spacing:.05em;color:#ffb3c8}
+
+/* ---------- responsive ---------- */
+@media (max-width:820px){
+  .hud-mid .hud-song{font-size:10px}
+  .fever-wrap{width:min(360px,72vw);top:calc(74px + env(safe-area-inset-top))}
+  .pads{--padh:clamp(120px,23vh,210px);padding:0 4px calc(6px + env(safe-area-inset-bottom));gap:4px}
+}
+@media (max-width:520px){
+  .hud-top{gap:8px}
+  .hud-score .k{font-size:8px;letter-spacing:.26em}
+  .hud-score .v{font-size:clamp(19px,5.6vw,26px)}
+  .hud-right{display:flex;gap:8px;flex:0 0 auto}
+.round-btn{width:38px;height:38px;border-radius:12px}
+  .panel{border-radius:18px}
+  .song{padding:9px 10px;gap:9px}
+  .song .chip{width:29px;height:29px;border-radius:9px}
+  .song .meta b{font-size:13.5px}
+  .song .meta span{font-size:9.5px}
+  .song .bpm{display:none}
+  .field{flex:1 1 100%}
+  .row.opts{grid-template-columns:1fr 1fr;gap:10px}
+  .row.opts .field{flex:none}
+  .combo-box{top:15%;left:50%;transform:translate(-50%,-50%) scale(.9);align-items:center}
+  .judge{top:53%}
+  .brand h1{font-size:clamp(24px,7.6vw,32px)}
+  .brand-sub{font-size:8.5px;letter-spacing:.2em}
+  .judge{font-size:clamp(17px,5vw,24px)}
+  .result-score span{font-size:34px}
+  .rank-ring{width:96px;height:96px}
+  .rank-ring span{font-size:42px}
+}
+@media (max-height:680px){
+  .brand{gap:10px}
+  .panel{gap:9px;padding:12px}
+  .song{padding:8px 10px}
+  .start-btn{padding:13px}
+  .title-wrap{gap:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  .start-btn::after,.brand-mark{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="app" data-screen="title" data-fever="0">
+  <canvas id="scene"></canvas>
+  <div id="vignette"></div>
+  <div id="feverGlow"></div>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="layer">
+    <div class="hud-top">
+      <div class="hud-score">
+        <span class="k">SCORE</span>
+        <span class="v" id="scoreVal">0</span>
+      </div>
+      <div class="hud-mid">
+        <div class="hud-song"><b id="hudTitle">—</b><em id="hudDiff">NORMAL</em></div>
+        <div class="hud-acc"><span id="accVal">100.00%</span><i class="sep"></i><span id="progressNum">0%</span></div>
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+      <div class="hud-right">
+        <button id="restartHud" class="round-btn" aria-label="다시 시작">⟲</button>
+        <button id="pauseBtn" class="round-btn" aria-label="일시정지">❚❚</button>
+      </div>
+    </div>
+
+    <div id="comboBox" class="combo-box"><span id="comboVal">0</span><small>COMBO</small></div>
+    <div id="judgeLayer" class="judge-layer"></div>
+
+    <div class="fever-wrap">
+      <div class="fever-label"><span id="feverWord">FEVER</span><b id="feverPct">0%</b></div>
+      <div class="fever-bar"><div id="feverFill"></div><i></i></div>
+    </div>
+  </div>
+
+  <!-- ============ TOUCH PADS ============ -->
+  <div id="pads" class="pads">
+    <button class="pad" data-lane="0"><span class="pad-key">D</span></button>
+    <button class="pad" data-lane="1"><span class="pad-key">F</span></button>
+    <button class="pad" data-lane="2"><span class="pad-key">J</span></button>
+    <button class="pad" data-lane="3"><span class="pad-key">K</span></button>
+  </div>
+
+  <!-- ============ TITLE ============ -->
+  <div id="titleScreen" class="overlay">
+    <div class="title-wrap">
+      <header class="brand">
+        <div class="brand-mark"></div>
+        <div>
+          <h1>피클 <em>3D</em></h1>
+          <p class="brand-sub">Pickle Rhythm · 네온 리듬 하이웨이</p>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head"><h2>곡 선택</h2><span class="hint">↑ ↓ 이동 · Enter 시작</span></div>
+        <div class="songs" id="songList"></div>
+
+        <div class="row">
+          <div class="field">
+            <label>난이도</label>
+            <div class="seg" id="diffSeg">
+              <button data-diff="0">EASY<small>Lv.3</small></button>
+              <button data-diff="1" class="on">NORMAL<small>Lv.7</small></button>
+              <button data-diff="2">HARD<small>Lv.12</small></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row opts">
+          <div class="field">
+            <label>볼륨 <b id="volVal">80</b></label>
+            <input id="volRange" type="range" min="0" max="100" step="1" value="80" aria-label="볼륨">
+          </div>
+          <div class="field">
+            <label>판정 오프셋 <b id="offsetVal">0ms</b></label>
+            <input id="offsetRange" type="range" min="-120" max="120" step="5" value="0" aria-label="판정 오프셋">
+          </div>
+          <div class="field">
+            <label>스크롤</label>
+            <div class="seg tiny" id="speedSeg">
+              <button data-speed="0.82">느리게</button>
+              <button data-speed="1" class="on">보통</button>
+              <button data-speed="1.32">빠르게</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>타격음</label>
+            <button id="sfxToggle" class="switch on" role="switch" aria-checked="true" aria-label="타격음"><span></span></button>
+          </div>
+        </div>
+
+        <button id="startBtn" class="start-btn">START<small>ENTER</small></button>
+      </section>
+
+      <footer class="title-foot">D · F · J · K &nbsp;|&nbsp; 모바일은 하단 4패드 &nbsp;|&nbsp; Space 일시정지</footer>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div id="pauseScreen" class="overlay hidden">
+    <div class="modal">
+      <h2>일시정지</h2>
+      <p id="pauseInfo">—</p>
+      <div class="modal-btns">
+        <button id="resumeBtn" class="start-btn">계속하기<small>SPACE</small></button>
+        <button id="restartBtn" class="ghost-btn">처음부터</button>
+        <button id="quitBtn" class="ghost-btn">곡 선택</button>
+      </div>
+      <p class="tiny-hint">ESC 로도 계속할 수 있어요</p>
+    </div>
+  </div>
+
+  <!-- ============ RESULT ============ -->
+  <div id="resultScreen" class="overlay hidden">
+    <div class="modal result">
+      <div class="rank-ring" id="rankRing"><span id="rankLetter">S</span></div>
+      <p class="result-song" id="resultSong">—</p>
+      <div id="resultHead" class="fc-badge" style="display:none">FULL COMBO</div>
+      <div class="result-score"><span id="resultScore">0</span><small>SCORE</small></div>
+      <div class="result-stats">
+        <div><b id="rAcc">0.00%</b><span>정확도</span></div>
+        <div><b id="rCombo">0</b><span>최대 콤보</span></div>
+        <div><b id="rNotes">0</b><span>노트 수</span></div>
+      </div>
+      <div class="judge-counts">
+        <div class="p"><span>PERFECT</span><b id="cPerfect">0</b></div>
+        <div class="g"><span>GREAT</span><b id="cGreat">0</b></div>
+        <div class="d"><span>GOOD</span><b id="cGood">0</b></div>
+        <div class="m"><span>MISS</span><b id="cMiss">0</b></div>
+      </div>
+      <div class="modal-btns">
+        <button id="againBtn" class="start-btn">다시 하기<small>ENTER</small></button>
+        <button id="menuBtn" class="ghost-btn">곡 선택</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="boot" class="boot"><div class="boot-ring"></div><span>피클을 깨우는 중…</span></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script>
+/* 부트 감시: CDN 로드 실패 시 안내 */
+(function(){
+  window.__pickleBooted = false;
+  setTimeout(function(){
+    if (window.__pickleBooted) return;
+    var b = document.getElementById('boot');
+    if (!b || b.classList.contains('gone')) return;
+    b.classList.add('err');
+    b.querySelector('span').textContent =
+      'Three.js를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요. (첫 실행에만 네트워크가 필요합니다)';
+  }, 9000);
+})();
+</script>
+<script type="module">
+
+/* =====================================================================
+   피클 3D 리듬게임 · Pickle Rhythm
+   단일 파일 / WebGL(Three.js r170) + Web Audio API(절차적 신스)
+   ===================================================================== */
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* ------------------------------ utils ------------------------------ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const damp = (a, b, l, dt) => lerp(a, b, 1 - Math.exp(-l * dt));
+const TAU = Math.PI * 2;
+const IS_TOUCH = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window;
+const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ------------------------------ songs ------------------------------ */
+const PAT = {
+  kick4:     'x...x...x...x...',
+  kickVerse: 'x.....x...x.x...',
+  kickDrop:  'x..x..x.x..x..x.',
+  kickBreak: 'x.........x.....',
+  snare2:    '....x.......x...',
+  hat8:      '..x...x...x...x.',
+  hat16:     'x.x.x.x.x.x.x.x.',
+  hatSparse: '....x.......x...',
+  bass16:    'x.xxx.x.x.xxx.x.',
+};
+const on = (pat, step) => pat.charCodeAt(step) === 120; /* 'x' */
+
+function tokens(str) {
+  return str.trim().split(/\s+/).map((t) => (t === '-' ? null : parseInt(t, 10)));
+}
+function riffOf(arr, bar) {
+  return arr[((bar % arr.length) + arr.length) % arr.length];
+}
+/* 코드톤 + 옥타브로 스케일도 -> 음정 */
+function degMidi(chord, deg, oct) {
+  const n = chord.length;
+  return chord[deg % n] + 12 * (Math.floor(deg / n) + oct);
+}
+function sectionOf(bar, bars) {
+  if (bar >= bars - 1) return 'outro';
+  const at = (b) => Math.round((bars / 32) * b);
+  if (bar < at(4)) return 'intro';
+  if (bar < at(12)) return 'verse';
+  if (bar < at(16)) return 'build';
+  if (bar < at(24)) return 'drop';
+  if (bar < at(28)) return 'break';
+  return 'final';
+}
+
+const SONGS = [
+  {
+    id: 'dawn',
+    ko: '라일락 새벽',
+    en: 'Lilac Dawn',
+    tag: '몽환 신스팝 · F major',
+    bpm: 104,
+    bars: 32,
+    seed: 3,
+    c1: '#e2d1ff',
+    c2: '#7350c0',
+    glow: 'rgba(170,125,255,.65)',
+    prog: [
+      [53, 57, 60, 64],
+      [50, 53, 57, 60],
+      [46, 50, 53, 57],
+      [48, 52, 55, 62],
+    ],
+    riffs: {
+      verse: [
+        tokens('0 - 2 - 3 - 2 - 1 - 3 - 5 - 4 -'),
+        tokens('4 - 3 - 2 - - 1 2 - 3 - 5 - 6 -'),
+      ],
+      drop: [
+        tokens('0 - 2 3 - 5 - 3 2 - 4 - 3 - 1 -'),
+        tokens('5 - 4 3 - 2 - 0 - 2 - 3 4 - 5 -'),
+        tokens('0 2 4 - 3 5 - 2 1 3 - 4 2 - 0 -'),
+      ],
+      break: [tokens('0 - 2 - 4 - 2 - 3 - 5 - 4 - 2 -')],
+    },
+  },
+  {
+    id: 'circuit',
+    ko: '피클 서킷',
+    en: 'Pickle Circuit',
+    tag: '에너제틱 하우스 · E minor',
+    bpm: 128,
+    bars: 32,
+    seed: 7,
+    c1: '#a9f4ff',
+    c2: '#2b6ea8',
+    glow: 'rgba(110,225,255,.65)',
+    prog: [
+      [52, 55, 59, 62],
+      [48, 52, 55, 59],
+      [43, 47, 50, 55],
+      [50, 54, 57, 62],
+    ],
+    riffs: {
+      verse: [
+        tokens('0 - 0 2 - 3 - 2 0 - 1 - 3 - - -'),
+        tokens('2 - 3 - 2 0 - 1 - - 2 - 0 - - -'),
+      ],
+      drop: [
+        tokens('0 0 2 - 3 2 0 - 4 4 3 - 2 0 - 0'),
+        tokens('0 - 3 4 - 2 3 - 5 - 4 3 - 2 - 0'),
+        tokens('3 3 - 2 0 - 2 3 - 5 4 - 3 2 0 -'),
+      ],
+      break: [tokens('0 - 2 - 3 - 4 - 5 - 4 - 3 - 2 -')],
+    },
+  },
+  {
+    id: 'rush',
+    ko: '사워 러시',
+    en: 'Sour Rush',
+    tag: '하드코어 신스 · D minor',
+    bpm: 148,
+    bars: 32,
+    seed: 11,
+    c1: '#ffc4e6',
+    c2: '#b8346e',
+    glow: 'rgba(255,130,200,.6)',
+    prog: [
+      [50, 53, 57, 62],
+      [46, 50, 53, 58],
+      [43, 46, 50, 55],
+      [45, 49, 52, 57],
+    ],
+    riffs: {
+      verse: [
+        tokens('0 2 - 3 2 0 - 1 3 - 4 3 2 - 0 -'),
+        tokens('0 - 3 - 2 3 - 4 5 - 3 2 - 0 - -'),
+      ],
+      drop: [
+        tokens('0 2 3 2 0 - 3 4 5 3 2 0 2 3 - 5'),
+        tokens('0 - 2 - 3 4 - 2 0 - 3 - 5 4 2 0'),
+        tokens('5 4 3 2 0 2 3 4 1 2 3 5 6 5 3 2'),
+      ],
+      break: [tokens('0 2 3 5 4 3 2 0 1 2 3 5 6 5 3 2')],
+    },
+  },
+];
+
+/* 한 스텝(16분음표)의 음악 정보 — 음악 재생과 채보가 같은 함수를 쓴다 */
+function stepData(song, bar, step) {
+  const sec = sectionOf(bar, song.bars);
+  const chord = song.prog[bar % song.prog.length];
+  const beat = 60 / song.bpm;
+  const o = {
+    sec, chord, kick: 0, snare: 0, hat: 0, open: 0,
+    bass: null, lead: null, arp: null, pad: null, fx: null,
+  };
+
+  if (sec === 'outro') {
+    if (step === 0) {
+      o.kick = 0.95; o.pad = chord; o.fx = 'crash';
+      o.bass = { midi: chord[0] - 24, len: beat * 4, vel: 1 };
+    }
+    if (step === 0 && bar === song.bars - 1) o.fx2 = 'end';
+    return o;
+  }
+
+  if (sec === 'intro') {
+    if (step === 0) o.pad = chord;
+    if (bar >= 2 && step % 2 === 0) o.arp = chord[(step >> 1) % chord.length] + 12;
+    if (bar >= 2 && on(PAT.hat8, step)) o.hat = 0.4;
+    if (bar === 3 && (step === 0 || step === 8)) o.kick = 0.85;
+    if (bar === 0 && step === 0) o.fx = 'crash';
+    return o;
+  }
+
+  if (sec === 'verse') {
+    if (on(PAT.kickVerse, step)) o.kick = step % 4 ? 0.75 : 1;
+    if (on(PAT.snare2, step)) o.snare = 0.85;
+    if (on(PAT.hat8, step)) o.hat = 0.5;
+    if (step % 2 === 0) o.bass = { midi: chord[0] - 12, len: beat * 0.42, vel: 0.85 };
+    const d = riffOf(song.riffs.verse, bar >> 1)[step];
+    if (d !== null && d !== undefined) o.lead = { midi: degMidi(chord, d, 1), vel: 0.8, len: beat * 0.42 };
+    if (bar === 11 && step >= 12) o.snare = 0.7;
+    return o;
+  }
+
+  if (sec === 'build') {
+    if (on(PAT.kick4, step)) o.kick = 1;
+    const sub = (bar - Math.round((song.bars / 32) * 12)) & 3;
+    const div = [4, 4, 2, 1][sub];
+    if (step >= 8 && step % div === 0) o.snare = 0.3 + 0.16 * sub;
+    if (sub >= 1 && on(PAT.hat16, step)) o.hat = 0.28;
+    if (step % 2 === 0) o.arp = chord[(step >> 1) % chord.length] + 12 + (sub >= 2 ? 12 : 0);
+    if (step === 0) o.pad = chord;
+    if (sub === 0 && step === 0) o.fx = 'riser';
+    return o;
+  }
+
+  if (sec === 'break') {
+    if (on(PAT.kickBreak, step)) o.kick = 0.8;
+    if (on(PAT.hatSparse, step)) o.hat = 0.3;
+    const seq = [0, 1, 2, 3, 2, 1];
+    o.arp = chord[seq[step % seq.length]] + 12 + (step >= 8 ? 12 : 0);
+    if (step === 0) o.pad = chord;
+    return o;
+  }
+
+  /* drop / final */
+  if (on(PAT.kickDrop, step)) o.kick = step % 4 === 0 ? 1 : 0.85;
+  if (on(PAT.snare2, step)) o.snare = 1;
+  if (on(PAT.hat16, step)) o.hat = 0.3;
+  if (step === 6 || step === 14) o.open = 0.45;
+  if (on(PAT.bass16, step)) {
+    const oct = step === 10 || step === 11 ? -2 : 0;
+    o.bass = { midi: chord[0] - 12 + oct, len: beat * 0.18, vel: 0.95 };
+  }
+  const dropRiffs = song.riffs.drop;
+  const d = riffOf(dropRiffs, bar + (sec === 'final' ? 1 : 0))[step];
+  if (d !== null && d !== undefined) o.lead = { midi: degMidi(chord, d, 1), vel: 1, len: beat * 0.3 };
+  if (step === 0 && bar % 4 === 0) o.pad = chord;
+  if (step === 0 && (bar === 16 || bar === 28 || bar === 24)) o.fx = 'crash';
+  return o;
+}
+
+/* ------------------------------ 채보 ------------------------------ */
+const LANE_PATS = [
+  [0, 1, 2, 3, 2, 1, 3, 2],
+  [0, 2, 1, 3, 2, 3, 1, 0],
+  [3, 2, 1, 0, 1, 2, 0, 1],
+  [0, 3, 1, 2, 3, 0, 2, 1],
+  [1, 0, 2, 3, 0, 3, 2, 1],
+  [2, 3, 1, 0, 3, 2, 0, 1],
+  [0, 1, 0, 3, 1, 2, 3, 2],
+];
+
+function buildChart(song, diff) {
+  const stepDur = 60 / song.bpm / 4;
+  const bars = song.bars;
+  const cands = [];
+  for (let bar = 0; bar < bars; bar++) {
+    for (let step = 0; step < 16; step++) {
+      const s = stepData(song, bar, step);
+      if (s.sec === 'outro') continue;
+      const t = (bar * 16 + step) * stepDur;
+      const onBeat = step % 4 === 0;
+      if (s.lead) {
+        cands.push({ t, bar, step, str: 1 + (onBeat ? 0.4 : 0) + (step % 2 === 0 ? 0.15 : 0), sec: s.sec });
+      } else if (s.arp) {
+        cands.push({ t, bar, step, str: s.sec === 'break' ? 0.66 : 0.44, sec: s.sec });
+      }
+      if (s.snare && !s.lead) {
+        cands.push({ t, bar, step, str: 0.52 + (onBeat ? 0.3 : 0), sec: s.sec });
+      }
+    }
+  }
+
+  const keep = cands.filter((c) => {
+    if (diff === 0) {
+      /* EASY: 4분음표 위주, 강한 박만 8분 추가 */
+      if (c.step % 4 === 0) return true;
+      return c.step % 2 === 0 && c.str >= 1.3 && c.sec !== 'build';
+    }
+    if (diff === 1) {
+      /* NORMAL: 8분음표 위주 + 강조 16분 */
+      if (c.step % 2 === 0) return true;
+      return c.str >= 1.35 && c.sec !== 'build';
+    }
+    /* HARD: 전부 */
+    return true;
+  });
+
+  const notes = [];
+  const lastLane = [-9, -9, -9, -9];
+  let lastT = -9;
+  let barCount = -1;
+  let barIdx = 0;
+  let lastLaneUsed = -1;
+
+  for (const c of keep) {
+    if (c.bar !== barCount) { barCount = c.bar; barIdx = 0; }
+    const pat = LANE_PATS[(c.bar * 3 + song.seed) % LANE_PATS.length];
+    let lane = pat[barIdx % pat.length];
+    barIdx++;
+
+    /* 연타 방지: 같은 레인 150ms 이내 금지 */
+    const gap = diff === 2 ? 0.115 : 0.14;
+    if (c.t - lastLane[lane] < gap) {
+      const order = [1, 2, 3].map((k) => (lane + k) % 4);
+      let found = -1;
+      for (const cand of order) {
+        if (c.t - lastLane[cand] >= gap) { found = cand; break; }
+      }
+      if (found < 0) continue;
+      lane = found;
+    }
+    /* 전체 최소 간격 */
+    if (c.t - lastT < 0.055) continue;
+
+    notes.push({ t: c.t, lane, hit: false, judged: false, jt: -1, missFade: 0 });
+    lastLane[lane] = c.t;
+    lastT = c.t;
+    lastLaneUsed = lane;
+
+    /* HARD: 강한 다운비트에 2노트 */
+    if (diff === 2 && c.step === 0 && c.sec !== 'intro' && c.bar % 2 === 0 && c.str >= 1.4) {
+      const pair = 3 - lane;
+      if (c.t - lastLane[pair] >= 0.3 && c.t - lastT >= 0.055) {
+        notes.push({ t: c.t, lane: pair, hit: false, judged: false, jt: -1, missFade: 0 });
+        lastLane[pair] = c.t;
+      }
+    }
+  }
+
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return notes;
+}
+
+function songDuration(song) {
+  return (song.bars * 4 * 60) / song.bpm;
+}
+
+/* ------------------------------ audio engine ------------------------------ */
+const AUDIO = {
+  ctx: null,
+  master: null,
+  musicBus: null,
+  duck: null,
+  verbBus: null,
+  delayBus: null,
+  sfxBus: null,
+  noise: null,
+  vol: 0.8,
+  sfxOn: true,
+  ready: false,
+  srcs: null,
+  _silenceToken: 0,
+
+  init() {
+    if (this.ctx) return this.ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    const ctx = new AC({ latencyHint: 'interactive' });
+    this.ctx = ctx;
+    this.srcs = new Set();
+    const track = (src) => {
+      this.srcs.add(src);
+      src.addEventListener('ended', () => this.srcs.delete(src));
+      return src;
+    };
+    const mkOsc = ctx.createOscillator.bind(ctx);
+    const mkBuf = ctx.createBufferSource.bind(ctx);
+    ctx.createOscillator = () => track(mkOsc());
+    ctx.createBufferSource = () => track(mkBuf());
+
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 18;
+    comp.ratio.value = 3.4;
+    comp.attack.value = 0.004;
+    comp.release.value = 0.18;
+
+    const master = ctx.createGain();
+    master.gain.value = 0.0001;
+    master.connect(comp);
+    comp.connect(ctx.destination);
+    this.master = master;
+
+    const duck = ctx.createGain();
+    duck.gain.value = 1;
+    duck.connect(master);
+    this.duck = duck;
+
+    const music = ctx.createGain();
+    music.gain.value = 0.92;
+    music.connect(duck);
+    this.musicBus = music;
+
+    const sfx = ctx.createGain();
+    sfx.gain.value = 0.7;
+    sfx.connect(master);
+    this.sfxBus = sfx;
+
+    /* 리버브 (절차적 IR) */
+    const verb = ctx.createConvolver();
+    verb.buffer = this.makeIR(2.6, 2.4);
+    const verbIn = ctx.createGain();
+    verbIn.gain.value = 1;
+    const verbOut = ctx.createGain();
+    verbOut.gain.value = 0.5;
+    verbIn.connect(verb);
+    verb.connect(verbOut);
+    verbOut.connect(music);
+    this.verbBus = verbIn;
+
+    /* 딜레이 */
+    const dl = ctx.createDelay(1.2);
+    dl.delayTime.value = 0.279;
+    const fb = ctx.createGain();
+    fb.gain.value = 0.3;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 2400;
+    const dlIn = ctx.createGain(); dlIn.gain.value = 1;
+    const dlOut = ctx.createGain(); dlOut.gain.value = 0.4;
+    dlIn.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(dlOut); dlOut.connect(music);
+    this.delayBus = dlIn;
+
+    /* 노이즈 버퍼 */
+    const nlen = Math.floor(ctx.sampleRate * 2);
+    const nb = ctx.createBuffer(1, nlen, ctx.sampleRate);
+    const nd = nb.getChannelData(0);
+    for (let i = 0; i < nlen; i++) nd[i] = Math.random() * 2 - 1;
+    this.noise = nb;
+
+    this.setVolume(this.vol);
+    this.ready = true;
+    return ctx;
+  },
+
+  makeIR(dur, decay) {
+    const ctx = this.ctx;
+    const len = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < len; i++) {
+        const x = i / len;
+        const early = Math.min(1, i / (ctx.sampleRate * 0.012));
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, decay) * early * 0.7;
+      }
+    }
+    return buf;
+  },
+
+  setVolume(v) {
+    this.vol = clamp(v, 0, 1);
+    if (!this.master) return;
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(Math.max(0.0001, this.vol * 0.95), now, 0.05);
+  },
+
+  now() { return this.ctx ? this.ctx.currentTime : 0; },
+
+  stopAll() {
+    if (!this.srcs) return;
+    for (const s of Array.from(this.srcs)) {
+      try { s.stop(); } catch (e) { /* already stopped */ }
+      try { s.disconnect(); } catch (e) {}
+    }
+    this.srcs.clear();
+    if (this.ctx && this.duck) {
+      const n = this.ctx.currentTime;
+      this.duck.gain.cancelScheduledValues(n);
+      this.duck.gain.setValueAtTime(1, n);
+    }
+  },
+
+  silenceMusic(fade = 0.55) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const tok = ++this._silenceToken;
+    const now = ctx.currentTime;
+    const g = this.musicBus.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(0.0001, g.value), now);
+    g.linearRampToValueAtTime(0.0001, now + fade);
+    setTimeout(() => {
+      if (tok !== this._silenceToken) return;
+      this.stopAll();
+      const n = this.ctx.currentTime;
+      g.cancelScheduledValues(n);
+      g.setValueAtTime(0.92, n);
+    }, fade * 1000 + 180);
+  },
+
+  cancelSilence() {
+    this._silenceToken++;
+    if (!this.ctx) return;
+    const g = this.musicBus.gain;
+    const n = this.ctx.currentTime;
+    g.cancelScheduledValues(n);
+    g.setValueAtTime(0.92, n);
+  },
+
+  /* ---- instruments ---- */
+  kick(t, vel = 1) {
+    const ctx = this.ctx;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(165, t);
+    o.frequency.exponentialRampToValueAtTime(43, t + 0.115);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.95 * vel, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+    o.connect(g); g.connect(this.musicBus);
+    o.start(t); o.stop(t + 0.4);
+
+    const n = ctx.createBufferSource();
+    n.buffer = this.noise;
+    const nf = ctx.createBiquadFilter();
+    nf.type = 'highpass'; nf.frequency.value = 1600;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.16 * vel, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.028);
+    n.connect(nf); nf.connect(ng); ng.connect(this.musicBus);
+    n.start(t, Math.random() * 1.5); n.stop(t + 0.04);
+
+    /* 사이드체인 펌핑 */
+    const dk = this.duck.gain;
+    dk.setValueAtTime(0.42, t);
+    dk.linearRampToValueAtTime(1, t + 0.17);
+  },
+
+  snare(t, vel = 1) {
+    const ctx = this.ctx;
+    const n = ctx.createBufferSource();
+    n.buffer = this.noise;
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass'; f.frequency.value = 1750; f.Q.value = 0.9;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 420;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5 * vel, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+    n.connect(hp); hp.connect(f); f.connect(g); g.connect(this.musicBus);
+    if (this.verbBus) {
+      const vs = ctx.createGain(); vs.gain.value = 0.35;
+      g.connect(vs); vs.connect(this.verbBus);
+    }
+    n.start(t, Math.random() * 1.5); n.stop(t + 0.22);
+
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(196, t);
+    o.frequency.exponentialRampToValueAtTime(150, t + 0.09);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t);
+    og.gain.exponentialRampToValueAtTime(0.24 * vel, t + 0.004);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    o.connect(og); og.connect(this.musicBus);
+    o.start(t); o.stop(t + 0.14);
+  },
+
+  hat(t, vel = 1, open = false) {
+    const ctx = this.ctx;
+    const n = ctx.createBufferSource();
+    n.buffer = this.noise;
+    const f = ctx.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = open ? 6200 : 8200;
+    const g = ctx.createGain();
+    const d = open ? 0.24 : 0.042;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.20 * vel, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    n.connect(f); f.connect(g); g.connect(this.musicBus);
+    n.start(t, Math.random() * 1.5); n.stop(t + d + 0.02);
+  },
+
+  crash(t, vel = 1) {
+    const ctx = this.ctx;
+    const n = ctx.createBufferSource();
+    n.buffer = this.noise;
+    const f = ctx.createBiquadFilter();
+    f.type = 'highpass'; f.frequency.value = 4200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.34 * vel, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    n.connect(f); f.connect(g); g.connect(this.musicBus);
+    if (this.verbBus) {
+      const vs = ctx.createGain(); vs.gain.value = 0.5;
+      g.connect(vs); vs.connect(this.verbBus);
+    }
+    n.start(t, Math.random() * 0.5); n.stop(t + 1.6);
+  },
+
+  riser(t, dur) {
+    const ctx = this.ctx;
+    const n = ctx.createBufferSource();
+    n.buffer = this.noise;
+    n.loop = true;
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass'; f.Q.value = 1.6;
+    f.frequency.setValueAtTime(420, t);
+    f.frequency.exponentialRampToValueAtTime(7200, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.22, t + dur * 0.92);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(this.musicBus);
+    n.start(t); n.stop(t + dur + 0.05);
+  },
+
+  bass(t, midi, len, vel = 1) {
+    const ctx = this.ctx;
+    const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = f0;
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = f0 / 2;
+    const subG = ctx.createGain();
+    subG.gain.value = 0.55;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 5;
+    lp.frequency.setValueAtTime(Math.min(1500, f0 * 9), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(150, f0 * 2.2), t + Math.max(0.08, len * 1.5));
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.30 * vel, t + 0.012);
+    g.gain.setValueAtTime(0.30 * vel, t + Math.max(0.02, len * 0.8));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.09);
+    o.connect(lp); sub.connect(subG); subG.connect(lp); lp.connect(g); g.connect(this.musicBus);
+    o.start(t); o.stop(t + len + 0.12);
+    sub.start(t); sub.stop(t + len + 0.12);
+  },
+
+  lead(t, midi, len, vel = 1) {
+    const ctx = this.ctx;
+    const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.14 * vel, t + 0.008);
+    g.gain.setValueAtTime(0.11 * vel, t + Math.max(0.03, len * 0.6));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.13);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 3.2;
+    lp.frequency.setValueAtTime(Math.min(9000, f0 * 8), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(700, f0 * 2.4), t + 0.22);
+    const o1 = ctx.createOscillator();
+    o1.type = 'sawtooth'; o1.frequency.value = f0; o1.detune.value = -7;
+    const o2 = ctx.createOscillator();
+    o2.type = 'square'; o2.frequency.value = f0 * 2.005; o2.detune.value = 6;
+    const o2g = ctx.createGain(); o2g.gain.value = 0.32;
+    o1.connect(lp); o2.connect(o2g); o2g.connect(lp);
+    lp.connect(g); g.connect(this.musicBus);
+    if (this.delayBus) { const s = ctx.createGain(); s.gain.value = 0.5; g.connect(s); s.connect(this.delayBus); }
+    if (this.verbBus) { const v = ctx.createGain(); v.gain.value = 0.28; g.connect(v); v.connect(this.verbBus); }
+    o1.start(t); o2.start(t);
+    o1.stop(t + len + 0.16); o2.stop(t + len + 0.16);
+  },
+
+  arp(t, midi, len, vel = 0.8) {
+    const ctx = this.ctx;
+    const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.value = f0;
+    const o2 = ctx.createOscillator();
+    o2.type = 'sine'; o2.frequency.value = f0 * 2;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.115 * vel, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.1);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 5200;
+    o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.musicBus);
+    if (this.verbBus) { const v = ctx.createGain(); v.gain.value = 0.4; g.connect(v); v.connect(this.verbBus); }
+    o.start(t); o2.start(t);
+    o.stop(t + len + 0.14); o2.stop(t + len + 0.14);
+  },
+
+  pad(t, chord, len, vel = 1) {
+    const ctx = this.ctx;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.055 * vel, t + Math.min(0.5, len * 0.35));
+    g.gain.setValueAtTime(0.055 * vel, t + len * 0.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.55);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1500; lp.Q.value = 0.8;
+    g.connect(lp); lp.connect(this.musicBus);
+    if (this.verbBus) { const v = ctx.createGain(); v.gain.value = 0.75; lp.connect(v); v.connect(this.verbBus); }
+    const oscs = [];
+    for (const m of chord) {
+      for (const det of [-8, 8]) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = 440 * Math.pow(2, (m - 69) / 12);
+        o.detune.value = det + (Math.random() * 4 - 2);
+        o.connect(g);
+        oscs.push(o);
+        o.start(t);
+        o.stop(t + len + 0.7);
+      }
+    }
+  },
+
+  /* 타격음 */
+  hitSfx(lane, kind) {
+    if (!this.sfxOn) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.005;
+    const base = [523.25, 659.25, 783.99, 1046.5][lane];
+    const o = ctx.createOscillator();
+    o.type = 'triangle';
+    const mul = kind === 0 ? 2 : kind === 1 ? 1.5 : 1.18;
+    o.frequency.setValueAtTime(base * mul, t);
+    o.frequency.exponentialRampToValueAtTime(base * mul * 0.62, t + 0.075);
+    const g = ctx.createGain();
+    const peak = kind === 0 ? 0.15 : kind === 1 ? 0.11 : 0.08;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
+    o.connect(g); g.connect(this.sfxBus);
+    o.start(t); o.stop(t + 0.1);
+
+    if (kind === 0) {
+      const o2 = ctx.createOscillator();
+      o2.type = 'sine';
+      o2.frequency.setValueAtTime(base * 3, t + 0.01);
+      const g2 = ctx.createGain();
+      g2.gain.setValueAtTime(0.0001, t + 0.01);
+      g2.gain.exponentialRampToValueAtTime(0.05, t + 0.014);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      o2.connect(g2); g2.connect(this.sfxBus);
+      o2.start(t + 0.01); o2.stop(t + 0.14);
+    }
+  },
+
+  uiClick() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + 0.002;
+    const o = this.ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, t);
+    o.frequency.exponentialRampToValueAtTime(1320, t + 0.05);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.06, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g); g.connect(this.sfxBus);
+    o.start(t); o.stop(t + 0.1);
+  },
+};
+
+/* ============================ 3D SCENE ============================ */
+const LANE_X = [-3.45, -1.15, 1.15, 3.45];
+const LANE_W = 2.3;
+const NOTE_Y = 1.02;
+const SPAWN_Z = -66;
+const MASCOT_Z = -26;
+const MASCOT_Y = 8.5;
+const LANE_HEX = [0xc6a3ff, 0x78e9ff, 0x8dffd6, 0xffaad8];
+const NOTE_HEX = [0xb992ff, 0x3fd8ff, 0x4dffbc, 0xff86d2];
+
+let renderer, scene, camera, composer, bloomPass;
+const SC = {
+  notePools: [],
+  rings: [],
+  ringGlow: [],
+  archMats: [],
+  laneLights: [],
+  floorMat: null,
+  mascot: null,
+  fx: null,
+  stars: null,
+};
+
+function makeGlowTex() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.16, 'rgba(255,255,255,.9)');
+  grd.addColorStop(0.36, 'rgba(255,255,255,.42)');
+  grd.addColorStop(0.6, 'rgba(255,255,255,.14)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const GLOW_TEX = makeGlowTex();
+
+function initGraphics() {
+  const canvas = $('#scene');
+  renderer = new THREE.WebGLRenderer({
+    canvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x05030d);
+  scene.fog = new THREE.FogExp2(0x080517, 0.009);
+
+  camera = new THREE.PerspectiveCamera(47, window.innerWidth / window.innerHeight, 0.1, 400);
+  frameCamera();
+
+  bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.42, 0.5, 0.9
+  );
+  composer = new EffectComposer(renderer);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(window.innerWidth, window.innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => setTimeout(onResize, 220));
+
+  buildWorld();
+  buildNotes();
+  buildMascot();
+  buildFx();
+}
+
+/* 화면 비율에 맞춘 카메라 (세로 화면은 더 멀리서) */
+const CAM = {
+  land: { fov: 47, p: [0, 7.2, 13.5], t: [0, 1.0, -16] },
+  port: { fov: 60, p: [0, 9.5, 23.0], t: [0, 1.3, -16] },
+};
+let CAM_TARGET = new THREE.Vector3();
+
+function frameCamera() {
+  const aspect = window.innerWidth / window.innerHeight;
+  const c = aspect < 0.95 ? CAM.port : CAM.land;
+  camera.fov = c.fov;
+  camera.position.set(c.p[0], c.p[1], c.p[2]);
+  CAM_TARGET.set(c.t[0], c.t[1], c.t[2]);
+  camera.lookAt(CAM_TARGET);
+  camera.updateProjectionMatrix();
+}
+
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2));
+  renderer.setSize(w, h, false);
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(w, h);
+  bloomPass.setSize(w, h);
+  frameCamera();
+}
+
+/* ---------------------------- world ---------------------------- */
+function buildWorld() {
+  /* 하늘 */
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: {
+      uTop: { value: new THREE.Color(0x04030c) },
+      uMid: { value: new THREE.Color(0x1b0e3c) },
+      uBot: { value: new THREE.Color(0x090a1e) },
+      uGlow: { value: new THREE.Color(0x6335b8) },
+      uPulse: { value: 0 },
+    },
+    vertexShader: `
+      varying vec3 vP;
+      void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      uniform vec3 uTop, uMid, uBot, uGlow; uniform float uPulse;
+      varying vec3 vP;
+      void main(){
+        vec3 d = normalize(vP);
+        float h = d.y;
+        vec3 c = mix(uBot, uMid, smoothstep(-0.30, 0.22, h));
+        c = mix(c, uTop, smoothstep(0.18, 0.95, h));
+        float horizon = exp(-pow(abs(h - 0.03) * 8.0, 2.0));
+        c += uGlow * horizon * (0.22 + uPulse * 0.35);
+        gl_FragColor = vec4(c, 1.0);
+      }
+    `,
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(240, 32, 20), skyMat);
+  sky.frustumCulled = false;
+  scene.add(sky);
+  SC.skyMat = skyMat;
+
+  /* 별 */
+  const N = 700;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const r = 80 + Math.random() * 120;
+    const th = Math.random() * TAU;
+    const ph = Math.acos(Math.random() * 0.8 + 0.05);
+    pos[i * 3] = Math.cos(th) * Math.sin(ph) * r;
+    pos[i * 3 + 1] = Math.abs(Math.cos(ph)) * r * 0.9 + 4;
+    pos[i * 3 + 2] = Math.sin(th) * Math.sin(ph) * r - 30;
+    const t = Math.random();
+    col[i * 3] = lerp(0.5, 1.0, t);
+    col[i * 3 + 1] = lerp(0.55, 0.92, t);
+    col[i * 3 + 2] = 1.0;
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  sg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  SC.stars = new THREE.Points(sg, new THREE.PointsMaterial({
+    size: 1.3, map: GLOW_TEX, vertexColors: true, transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  }));
+  SC.stars.frustumCulled = false;
+  scene.add(SC.stars);
+
+  /* 바닥: 네온 하이웨이 */
+  SC.floorMat = new THREE.ShaderMaterial({
+    fog: false,
+    uniforms: {
+      uTime: { value: 0 },
+      uBeat: { value: 0 },
+      uEnergy: { value: 0 },
+      uL: { value: LANE_HEX.map((h) => new THREE.Color(h)) },
+      uBase: { value: new THREE.Color(0x04030a) },
+    },
+    vertexShader: `
+      varying vec3 vW;
+      void main(){
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime, uBeat, uEnergy;
+      uniform vec3 uL[4];
+      uniform vec3 uBase;
+      varying vec3 vW;
+      void main(){
+        float x = vW.x, z = vW.z;
+        float fi = clamp(floor((x + 4.6) / 2.3), 0.0, 3.0);
+        int li = int(fi);
+        vec3 lc = uL[0];
+        if (li == 1) lc = uL[1];
+        else if (li == 2) lc = uL[2];
+        else if (li == 3) lc = uL[3];
+
+        float far = smoothstep(-170.0, -14.0, z);
+        float near = smoothstep(18.0, 3.0, z);
+        float side = 1.0 - smoothstep(5.15, 6.0, abs(x));
+        float fade = far * near * side;
+
+        float cx = -3.45 + 2.3 * fi;
+
+        vec3 col = uBase;
+        /* 원경 안개빛 (습한 노면 느낌) */
+        float depth = clamp(-z / 95.0, 0.0, 1.0);
+        col += mix(vec3(0.010, 0.008, 0.026), vec3(0.085, 0.055, 0.19), depth) * fade;
+        col += lc * 0.030 * fade * smoothstep(-100.0, -2.0, z);
+
+        /* 레인 경계 */
+        float ed = abs(fract(x / 2.3 + 0.5) - 0.5) * 2.3;
+        float sep = exp(-ed * ed * 1100.0);
+        col += lc * sep * (0.55 + 0.75 * uBeat) * fade;
+
+        /* 레인 중앙 점선 */
+        float cl = exp(-pow(x - cx, 2.0) * 480.0);
+        float dz = abs(fract(z / 2.6 + 0.25) - 0.5) * 2.6;
+        float dash = smoothstep(0.9, 0.35, dz);
+        col += lc * cl * dash * 0.055 * fade;
+
+        /* 마디 선 + 비트 펄스 */
+        float bz = abs(fract(z / 4.6 + 0.5) - 0.5) * 4.6;
+        float bl = exp(-bz * bz * 52.0);
+        col += mix(vec3(0.45, 0.55, 1.0), lc, 0.5) * bl * (0.12 + 0.42 * uBeat) * fade * 0.75;
+
+        /* 흐르는 스캔 */
+        float scan = exp(-pow(fract(z * 0.012 + uTime * 0.10) - 0.5, 2.0) * 46.0);
+        col += lc * scan * (0.02 + 0.07 * uEnergy) * fade;
+
+        /* 히트존 앞 밝기 */
+        col += lc * exp(-pow(z * 0.11, 2.0)) * 0.05 * fade * (0.5 + uBeat);
+
+        col *= smoothstep(0.0, 0.25, fade);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(140, 300), SC.floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, 0, -70);
+  scene.add(floor);
+
+  /* 아치 터널 */
+  const archGeo = new THREE.TorusGeometry(6.6, 0.045, 6, 56, Math.PI);
+  for (let i = 0; i < 11; i++) {
+    const m = new THREE.MeshBasicMaterial({
+      color: LANE_HEX[(i * 3) % 4], transparent: true, opacity: 0.10,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: true,
+    });
+    const arch = new THREE.Mesh(archGeo, m);
+    arch.position.set(0, 0.02, -16 - i * 10.5);
+    scene.add(arch);
+    SC.archMats.push(m);
+  }
+
+  /* 레인 레일 */
+  const railMat = new THREE.MeshBasicMaterial({
+    color: 0x9f7bff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  for (let i = 0; i <= 4; i++) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 170), railMat);
+    rail.position.set(-4.6 + i * 2.3, 0.035, -75);
+    scene.add(rail);
+  }
+  const edgeMat = new THREE.MeshBasicMaterial({
+    color: 0x8fe6ff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  for (const sx of [-1, 1]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.075, 170), edgeMat);
+    rail.position.set(sx * 5.15, 0.06, -75);
+    scene.add(rail);
+  }
+
+  /* 히트존: 레인별 발광 패널 */
+  const bar = new THREE.Mesh(
+    new THREE.BoxGeometry(10.4, 0.03, 0.1),
+    new THREE.MeshBasicMaterial({ color: 0xcfe3ff, transparent: true, opacity: 0.6 })
+  );
+  bar.position.set(0, 0.025, 0);
+  scene.add(bar);
+
+  /* 히트존 바닥 발광 띠 */
+  const zoneMat = new THREE.MeshBasicMaterial({
+    color: 0xbfd9ff, transparent: true, opacity: 0.10,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const zone = new THREE.Mesh(new THREE.PlaneGeometry(10.3, 1.15), zoneMat);
+  zone.rotation.x = -Math.PI / 2;
+  zone.position.set(0, 0.014, -0.58);
+  scene.add(zone);
+  SC.zone = { mesh: zone, mat: zoneMat };
+
+  const panelGeo = new THREE.PlaneGeometry(1.92, 1.5);
+  SC.panels = [];
+  for (let i = 0; i < 4; i++) {
+    const x = LANE_X[i];
+    SC.rings.push({ pulse: 0 });
+
+    /* 대상 띠 */
+    const slot = new THREE.Mesh(
+      new THREE.BoxGeometry(1.98, 0.085, 0.07),
+      new THREE.MeshBasicMaterial({ color: LANE_HEX[i], transparent: true, opacity: 0.85 })
+    );
+    slot.position.set(x, NOTE_Y, 0);
+    scene.add(slot);
+    SC.slots = SC.slots || [];
+    SC.slots.push({ mesh: slot, mat: slot.material });
+
+    const glowMat = new THREE.SpriteMaterial({
+      map: GLOW_TEX, color: LANE_HEX[i], transparent: true, opacity: 0.10,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const glow = new THREE.Sprite(glowMat);
+    glow.scale.set(2.4, 2.4, 1);
+    glow.position.set(x, NOTE_Y, -0.12);
+    scene.add(glow);
+    SC.ringGlow.push({ sp: glow, mat: glowMat });
+
+    const light = new THREE.PointLight(LANE_HEX[i], 3.0, 16, 2);
+    light.position.set(x, 1.7, -1.2);
+    scene.add(light);
+    SC.laneLights.push({ light, base: 3.0 });
+  }
+
+  /* 좌우 라인 필라 */
+  const pillarGeo = new THREE.BoxGeometry(0.1, 1, 0.1);
+  SC.pillars = [];
+  for (let i = 0; i < 14; i++) {
+    for (const sx of [-1, 1]) {
+      const h = 2.2 + (i % 3) * 0.5;
+      const m = new THREE.MeshBasicMaterial({
+        color: LANE_HEX[(i + (sx > 0 ? 1 : 0)) % 4], transparent: true, opacity: 0.34,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const p = new THREE.Mesh(pillarGeo, m);
+      p.scale.set(1, h, 1);
+      p.position.set(sx * 6.1, h / 2, -9 - i * 9.5);
+      scene.add(p);
+      SC.pillars.push({ mat: m, seed: i * 0.37 });
+    }
+  }
+
+  /* 하늘 달무리 */
+  const moonMat = new THREE.SpriteMaterial({
+    map: GLOW_TEX, color: 0x8a5cf0, transparent: true, opacity: 0.5,
+    blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+  });
+  const moon = new THREE.Sprite(moonMat);
+  moon.scale.set(86, 86, 1);
+  moon.position.set(-16, 24, -150);
+  scene.add(moon);
+  SC.moon = { sp: moon, mat: moonMat };
+
+  /* 조명 */
+  scene.add(new THREE.HemisphereLight(0x5b4a96, 0x0d0718, 0.9));
+  const key = new THREE.DirectionalLight(0xd9c6ff, 1.25);
+  key.position.set(7, 16, 12);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x5fd8ff, 1.2);
+  rim.position.set(-9, 8, -16);
+  scene.add(rim);
+
+  const spot = new THREE.SpotLight(0xd8b6ff, 46, 46, 0.66, 0.7, 1.4);
+  spot.position.set(0, 18, -6);
+  spot.target.position.set(0, MASCOT_Y, MASCOT_Z);
+  scene.add(spot);
+  scene.add(spot.target);
+  SC.spot = spot;
+
+  const mood = new THREE.PointLight(0x9a6bff, 22, 50, 2);
+  mood.position.set(0, MASCOT_Y, MASCOT_Z + 3);
+  scene.add(mood);
+  SC.mood = mood;
+}
+
+/* ---------------------------- notes ---------------------------- */
+const NOTE_CAP = 18;
+function buildNotes() {
+  const geo = new THREE.CapsuleGeometry(0.195, 1.55, 3, 14);
+  geo.rotateZ(Math.PI / 2);
+  const haloGeo = new THREE.PlaneGeometry(2.45, 1.5);
+  for (let i = 0; i < 4; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(NOTE_HEX[i]),
+    });
+    const inst = new THREE.InstancedMesh(geo, mat, NOTE_CAP);
+    inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    inst.frustumCulled = false;
+    inst.count = 0;
+    scene.add(inst);
+
+    const haloMat = new THREE.MeshBasicMaterial({
+      map: GLOW_TEX, color: NOTE_HEX[i], transparent: true, opacity: 0.30,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const halo = new THREE.InstancedMesh(haloGeo, haloMat, NOTE_CAP);
+    halo.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    halo.frustumCulled = false;
+    halo.count = 0;
+    scene.add(halo);
+
+    SC.notePools.push({ inst, mat, dummy: new THREE.Object3D(), halo, haloMat });
+  }
+}
+
+/* ---------------------------- mascot ---------------------------- */
+function buildMascot() {
+  const g = new THREE.Group();
+  const baseY = MASCOT_Y;
+  g.position.set(0, baseY, MASCOT_Z);
+  g.scale.setScalar(1.9);
+  scene.add(g);
+
+  const bodyMat = new THREE.MeshPhysicalMaterial({
+    color: 0xc9a4f7,
+    roughness: 0.20,
+    metalness: 0.0,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.12,
+    sheen: 1.0,
+    sheenColor: new THREE.Color(0xffe9ff),
+    sheenRoughness: 0.45,
+    emissive: new THREE.Color(0x6d3fc0),
+    emissiveIntensity: 0.40,
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.285, 26, 72), bodyMat);
+  g.add(ring);
+
+  const face = new THREE.Group();
+  face.position.z = 0.04;
+  g.add(face);
+
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.2 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x24103f, emissive: 0x120626, emissiveIntensity: 0.3, roughness: 0.15, metalness: 0.1 });
+  const eyes = [];
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.275, 20, 16), eyeMat);
+    eye.position.set(sx * 0.30, 0.11, 0.30);
+    eye.scale.set(1, 1.08, 0.7);
+    face.add(eye);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.145, 16, 12), pupilMat);
+    pupil.position.set(sx * 0.295, 0.09, 0.40);
+    pupil.scale.set(1, 1.05, 0.7);
+    face.add(pupil);
+    const spark = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    spark.position.set(sx * 0.30 + 0.05, 0.165, 0.46);
+    face.add(spark);
+    eyes.push({ eye, pupil, spark, bx: sx * 0.295, by: 0.09 });
+  }
+
+  const mouth = new THREE.Mesh(
+    new THREE.TorusGeometry(0.1, 0.024, 8, 20, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0x3a1a5e, roughness: 0.4 })
+  );
+  mouth.position.set(0, -0.16, 0.33);
+  mouth.rotation.z = Math.PI;
+  face.add(mouth);
+
+  const blushMat = new THREE.MeshBasicMaterial({ color: 0xff9ecd, transparent: true, opacity: 0.5 });
+  for (const sx of [-1, 1]) {
+    const b = new THREE.Mesh(new THREE.CircleGeometry(0.075, 16), blushMat);
+    b.position.set(sx * 0.46, -0.09, 0.26);
+    b.scale.set(1.2, 0.72, 1);
+    face.add(b);
+  }
+
+  const limbs = [];
+  for (const sx of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.082, 0.32, 4, 10), bodyMat);
+    arm.position.set(sx * 1.22, 0.05, 0);
+    arm.rotation.z = sx * -0.5;
+    g.add(arm);
+    limbs.push(arm);
+    const foot = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 12), bodyMat);
+    foot.position.set(sx * 0.42, -1.35, 0.03);
+    foot.scale.set(1, 0.75, 1.05);
+    g.add(foot);
+  }
+
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: 0xb98cff, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(1.58, 0.014, 6, 80), haloMat);
+  halo.position.z = -0.3;
+  g.add(halo);
+
+  const auraMat = new THREE.SpriteMaterial({
+    map: GLOW_TEX, color: 0xa678ff, transparent: true, opacity: 0.22,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const aura = new THREE.Sprite(auraMat);
+  aura.scale.set(5.6, 5.6, 1);
+  aura.position.z = -0.7;
+  g.add(aura);
+
+  SC.mascot = {
+    group: g, ring, bodyMat, face, eyes, mouth, halo, haloMat, aura, auraMat, limbs,
+    baseY, baseScale: 1.9, hitPulse: 0, missT: 0, blinkT: 2.4, blink: 0, comboGlow: 0, spin: 0,
+  };
+}
+
+/* ---------------------------- fx ---------------------------- */
+function buildFx() {
+  const MAX = 720;
+  const pos = new Float32Array(MAX * 3);
+  const col = new Float32Array(MAX * 3);
+  for (let i = 0; i < MAX; i++) pos[i * 3 + 1] = -999;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const points = new THREE.Points(geo, new THREE.PointsMaterial({
+    size: 0.30, map: GLOW_TEX, vertexColors: true, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  }));
+  points.frustumCulled = false;
+  scene.add(points);
+
+  const rings = [];
+  const ringGeo = new THREE.RingGeometry(0.55, 0.66, 40);
+  for (let i = 0; i < 12; i++) {
+    const m = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(ringGeo, m);
+    mesh.visible = false;
+    scene.add(mesh);
+    rings.push({ mesh, mat: m, life: 0, max: 1, grow: 1 });
+  }
+
+  SC.fx = {
+    MAX, pos, col, geo, points,
+    base: new Float32Array(MAX * 3),
+    vel: new Float32Array(MAX * 3),
+    life: new Float32Array(MAX),
+    max: new Float32Array(MAX),
+    cursor: 0, rings, ringCursor: 0,
+  };
+}
+
+function emitBurst(x, y, z, color, count, power) {
+  const fx = SC.fx;
+  if (!fx) return;
+  const c = new THREE.Color(color);
+  for (let i = 0; i < count; i++) {
+    const idx = fx.cursor;
+    fx.cursor = (fx.cursor + 1) % fx.MAX;
+    const a = Math.random() * TAU;
+    const r = Math.random() * 0.55;
+    fx.pos[idx * 3] = x + Math.cos(a) * r;
+    fx.pos[idx * 3 + 1] = y + (Math.random() - 0.5) * 0.2;
+    fx.pos[idx * 3 + 2] = z + (Math.random() - 0.5) * 0.3;
+    const sp = (1.4 + Math.random() * 3.2) * power;
+    fx.vel[idx * 3] = Math.cos(a) * sp * (0.7 + Math.random() * 0.6);
+    fx.vel[idx * 3 + 1] = (1.6 + Math.random() * 4.2) * power;
+    fx.vel[idx * 3 + 2] = Math.sin(a) * sp * 0.6 + 0.8;
+    const l = 0.32 + Math.random() * 0.46;
+    fx.life[idx] = l;
+    fx.max[idx] = l;
+    fx.base[idx * 3] = c.r;
+    fx.base[idx * 3 + 1] = c.g;
+    fx.base[idx * 3 + 2] = c.b;
+    fx.col[idx * 3] = c.r;
+    fx.col[idx * 3 + 1] = c.g;
+    fx.col[idx * 3 + 2] = c.b;
+  }
+  fx.geo.attributes.position.needsUpdate = true;
+  fx.geo.attributes.color.needsUpdate = true;
+}
+
+function emitRing(x, y, z, color, size) {
+  const fx = SC.fx;
+  if (!fx) return;
+  const r = fx.rings[fx.ringCursor];
+  fx.ringCursor = (fx.ringCursor + 1) % fx.rings.length;
+  r.mesh.position.set(x, y, z + 0.1);
+  r.mat.color.set(color);
+  r.mat.opacity = 0.95;
+  r.mesh.scale.setScalar(size * 0.4);
+  r.mesh.visible = true;
+  r.life = 0.44;
+  r.max = 0.44;
+  r.grow = size;
+}
+
+function updateFx(dt) {
+  const fx = SC.fx;
+  if (!fx) return;
+  let any = false;
+  for (let i = 0; i < fx.MAX; i++) {
+    if (fx.life[i] <= 0) continue;
+    any = true;
+    fx.life[i] -= dt;
+    if (fx.life[i] <= 0) {
+      fx.pos[i * 3 + 1] = -999;
+      continue;
+    }
+    fx.vel[i * 3 + 1] -= 11.5 * dt;
+    fx.pos[i * 3] += fx.vel[i * 3] * dt;
+    fx.pos[i * 3 + 1] += fx.vel[i * 3 + 1] * dt;
+    fx.pos[i * 3 + 2] += fx.vel[i * 3 + 2] * dt;
+    const k = fx.life[i] / fx.max[i];
+    const f = Math.pow(k, 1.4);
+    fx.col[i * 3] = fx.base[i * 3] * f;
+    fx.col[i * 3 + 1] = fx.base[i * 3 + 1] * f;
+    fx.col[i * 3 + 2] = fx.base[i * 3 + 2] * f;
+  }
+  if (any) {
+    fx.geo.attributes.position.needsUpdate = true;
+    fx.geo.attributes.color.needsUpdate = true;
+  }
+
+  for (const r of fx.rings) {
+    if (r.life <= 0) continue;
+    r.life -= dt;
+    if (r.life <= 0) { r.mesh.visible = false; continue; }
+    const k = 1 - r.life / r.max;
+    r.mesh.scale.setScalar(r.grow * (0.35 + k * 1.4));
+    r.mat.opacity = 0.95 * (1 - k) * (1 - k);
+  }
+}
+
+/* ============================ GAME ============================ */
+const HIT_W = [0.046, 0.092, 0.145]; /* PERFECT / GREAT / GOOD */
+const MISS_W = 0.175;
+const FEVER_TIME = 9;
+
+const G = {
+  screen: 'title',
+  songIndex: 0,
+  diff: 1,
+  scroll: 1,
+  offsetMs: 0,
+  notes: [],
+  counts: [0, 0, 0, 0],
+  judged: 0,
+  accSum: 0,
+  score: 0,
+  shownScore: 0,
+  combo: 0,
+  maxCombo: 0,
+  energy: 0,
+  fever: false,
+  feverT: 0,
+  startTime: 0,
+  latency: 0,
+  time: 0,
+  paused: false,
+  pausedCtxTime: 0,
+  lastBeat: -1,
+  laneFlash: [0, 0, 0, 0],
+  camShake: 0,
+  shakeSeed: 0,
+  auto: false,
+  ended: false,
+  presses: 0,
+};
+
+const MUSIC = {
+  timer: null, nextStep: 0, totalSteps: 0, stepDur: 0, at: 0, running: false, song: null,
+
+  start(song, at) {
+    this.stop();
+    const ctx = AUDIO.ctx;
+    if (!ctx) return;
+    this.song = song;
+    this.stepDur = 60 / song.bpm / 4;
+    this.totalSteps = song.bars * 16;
+    this.nextStep = 0;
+    this.at = at;
+    this.running = true;
+    this.tick();
+    this.timer = setInterval(() => this.tick(), 25);
+  },
+
+  tick() {
+    if (!this.running || !AUDIO.ctx) return;
+    const ctx = AUDIO.ctx;
+    const horizon = ctx.currentTime + 0.22;
+    let guard = 0;
+    while (this.nextStep < this.totalSteps && guard++ < 400) {
+      const t = this.at + this.nextStep * this.stepDur;
+      if (t > horizon) break;
+      if (t > ctx.currentTime - 0.06) this.play(this.nextStep, t);
+      this.nextStep++;
+    }
+  },
+
+  play(index, t) {
+    const bar = Math.floor(index / 16);
+    const step = index % 16;
+    const s = stepData(this.song, bar, step);
+    if (s.kick) AUDIO.kick(t, s.kick);
+    if (s.snare) AUDIO.snare(t, s.snare);
+    if (s.hat) AUDIO.hat(t, s.hat, false);
+    if (s.open) AUDIO.hat(t, s.open, true);
+    if (s.bass) AUDIO.bass(t, s.bass.midi, s.bass.len, s.bass.vel);
+    if (s.lead) AUDIO.lead(t, s.lead.midi, s.lead.len, s.lead.vel);
+    if (s.arp) AUDIO.arp(t, s.arp, this.stepDur * 1.7, s.sec === 'break' ? 0.95 : 0.6);
+    if (s.pad) AUDIO.pad(t, s.pad, this.stepDur * 16 * 0.96, 1);
+    if (s.fx === 'crash') AUDIO.crash(t, 0.85);
+    if (s.fx === 'riser') AUDIO.riser(t, this.stepDur * 64);
+  },
+
+  stop() {
+    this.running = false;
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+  },
+};
+
+/* ---------------------------- boot ---------------------------- */
+function boot() {
+  initGraphics();
+  buildSongList();
+  bindUI();
+  loadPrefs();
+  window.__pickleBooted = true;
+  const b = $('#boot');
+  b.classList.add('gone');
+  setTimeout(() => b.remove(), 700);
+  requestAnimationFrame(frame);
+}
+
+/* ---------------------------- UI: title ---------------------------- */
+function buildSongList() {
+  const wrap = $('#songList');
+  wrap.innerHTML = '';
+  SONGS.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'song' + (i === G.songIndex ? ' sel' : '');
+    btn.dataset.index = i;
+    btn.style.setProperty('--sc1', s.c1);
+    btn.style.setProperty('--sc2', s.c2);
+    btn.style.setProperty('--sc-glow', s.glow);
+    btn.innerHTML =
+      '<span class="chip"></span>' +
+      '<span class="meta"><b>' + s.ko + '</b><span>' + s.tag + '</span></span>' +
+      '<span class="bpm"><i>BPM</i>' + s.bpm + '</span>';
+    btn.addEventListener('click', () => {
+      if (AUDIO.ctx) AUDIO.uiClick();
+      selectSong(i);
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+function selectSong(i) {
+  G.songIndex = (i + SONGS.length) % SONGS.length;
+  $$('.song').forEach((el, k) => el.classList.toggle('sel', k === G.songIndex));
+  savePrefs();
+}
+
+function selectDiff(d) {
+  G.diff = clamp(d, 0, 2);
+  $$('#diffSeg button').forEach((b) => b.classList.toggle('on', +b.dataset.diff === G.diff));
+  savePrefs();
+}
+
+function selectSpeed(v) {
+  G.scroll = v;
+  $$('#speedSeg button').forEach((b) => b.classList.toggle('on', Math.abs(+b.dataset.speed - v) < 0.01));
+  savePrefs();
+}
+
+/* ---------------------------- prefs ---------------------------- */
+function savePrefs() {
+  try {
+    localStorage.setItem('pickle-rhythm-v1', JSON.stringify({
+      song: G.songIndex, diff: G.diff, scroll: G.scroll, vol: AUDIO.vol, sfx: AUDIO.sfxOn, off: G.offsetMs,
+    }));
+  } catch (e) { /* file:// 등 */ }
+}
+function loadPrefs() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem('pickle-rhythm-v1') || 'null'); } catch (e) { p = null; }
+  if (!p) return;
+  if (typeof p.song === 'number') selectSong(p.song);
+  if (typeof p.diff === 'number') selectDiff(p.diff);
+  if (typeof p.scroll === 'number') selectSpeed(p.scroll);
+  if (typeof p.vol === 'number') {
+    AUDIO.vol = clamp(p.vol, 0, 1);
+    $('#volRange').value = Math.round(AUDIO.vol * 100);
+    $('#volVal').textContent = Math.round(AUDIO.vol * 100);
+  }
+  if (typeof p.sfx === 'boolean') {
+    AUDIO.sfxOn = p.sfx;
+    $('#sfxToggle').classList.toggle('on', p.sfx);
+    $('#sfxToggle').setAttribute('aria-checked', String(p.sfx));
+  }
+  if (typeof p.off === 'number') {
+    G.offsetMs = clamp(p.off, -120, 120);
+    $('#offsetRange').value = G.offsetMs;
+    $('#offsetVal').textContent = G.offsetMs + 'ms';
+  }
+}
+
+/* ---------------------------- flow ---------------------------- */
+async function startGame() {
+  const song = SONGS[G.songIndex];
+  MUSIC.stop();
+  if (AUDIO.ctx) { try { AUDIO.stopAll(); } catch (e) {} }
+
+  AUDIO.init();
+  const ctx = AUDIO.ctx;
+  if (ctx) {
+    try { await ctx.resume(); } catch (e) {}
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
+    AUDIO.setVolume(AUDIO.vol);
+    AUDIO.musicBus.gain.cancelScheduledValues(ctx.currentTime);
+    AUDIO.musicBus.gain.setValueAtTime(0.92, ctx.currentTime);
+  }
+
+  G.notes = buildChart(song, G.diff).map((n) => ({ ...n, hit: false, judged: false, missed: false }));
+  G.counts = [0, 0, 0, 0];
+  G.judged = 0;
+  G.accSum = 0;
+  G.score = 0;
+  G.shownScore = 0;
+  G.combo = 0;
+  G.maxCombo = 0;
+  G.energy = 0;
+  G.fever = false;
+  G.feverT = 0;
+  G.paused = false;
+  G.ended = false;
+  G.lastBeat = -1;
+  G.laneFlash = [0, 0, 0, 0];
+  G.time = 0;
+
+  let lat = 0;
+  if (ctx) {
+    if (typeof ctx.outputLatency === 'number' && ctx.outputLatency > 0) lat = ctx.outputLatency;
+    else if (typeof ctx.baseLatency === 'number' && ctx.baseLatency > 0) lat = ctx.baseLatency;
+  }
+  G.latency = clamp(lat, 0, 0.35) + G.offsetMs / 1000;
+
+  AUDIO.cancelSilence();
+  hudCache.score = -1; hudCache.combo = -1; hudCache.acc = -1;
+  hudCache.prog = -1; hudCache.fever = -1; hudCache.feverOn = null;
+
+  const pre = 0.9;
+  G.startTime = (ctx ? ctx.currentTime : 0) + pre;
+  if (ctx) MUSIC.start(song, G.startTime);
+
+  $('#hudTitle').textContent = song.ko;
+  $('#hudDiff').textContent = ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#scoreVal').textContent = '0';
+  $('#comboVal').textContent = '0';
+  $('#comboBox').classList.remove('on');
+  $('#accVal').textContent = '100.00%';
+  $('#progressNum').textContent = '0%';
+  $('#progressFill').style.width = '0%';
+  $('#feverFill').style.width = '0%';
+  $('#feverPct').textContent = '0%';
+  $('#judgeLayer').innerHTML = '';
+
+  $('#titleScreen').classList.add('hidden');
+  $('#pauseScreen').classList.add('hidden');
+  $('#resultScreen').classList.add('hidden');
+  $('#app').dataset.screen = 'play';
+  $('#app').dataset.fever = '0';
+  G.screen = 'play';
+}
+
+function pauseGame() {
+  if (G.screen !== 'play' || G.paused) return;
+  G.paused = true;
+  G.pausedCtxTime = AUDIO.ctx ? AUDIO.ctx.currentTime : 0;
+  MUSIC.stop();
+  if (AUDIO.ctx) { try { AUDIO.ctx.suspend(); } catch (e) {} }
+  G.screen = 'pause';
+  $('#app').dataset.screen = 'pause';
+  $('#pauseInfo').textContent = SONGS[G.songIndex].ko + ' · ' + ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#pauseScreen').classList.remove('hidden');
+}
+
+async function resumeGame() {
+  if (G.screen !== 'pause') return;
+  const ctx = AUDIO.ctx;
+  if (ctx) {
+    try { await ctx.resume(); } catch (e) {}
+    const drift = ctx.currentTime - G.pausedCtxTime;
+    G.startTime += Math.max(0, drift);
+    MUSIC.at = G.startTime;
+    MUSIC.nextStep = Math.max(MUSIC.nextStep, Math.floor((ctx.currentTime - G.startTime) / MUSIC.stepDur) + 1);
+    MUSIC.running = true;
+    MUSIC.timer = setInterval(() => MUSIC.tick(), 25);
+  }
+  G.paused = false;
+  G.screen = 'play';
+  $('#app').dataset.screen = 'play';
+  $('#pauseScreen').classList.add('hidden');
+}
+
+function quitToMenu() {
+  MUSIC.stop();
+  if (AUDIO.ctx) {
+    try { AUDIO.ctx.resume(); } catch (e) {}
+    AUDIO.stopAll();
+  }
+  G.paused = false;
+  G.screen = 'title';
+  G.ended = false;
+  $('#app').dataset.screen = 'title';
+  $('#app').dataset.fever = '0';
+  $('#pauseScreen').classList.add('hidden');
+  $('#resultScreen').classList.add('hidden');
+  $('#titleScreen').classList.remove('hidden');
+}
+
+function finishSong() {
+  if (G.screen === 'result' || G.ended) return;
+  G.ended = true;
+  MUSIC.stop();
+  if (AUDIO.ctx) AUDIO.silenceMusic();
+  G.screen = 'result';
+  $('#app').dataset.screen = 'result';
+  $('#app').dataset.fever = '0';
+
+  const song = SONGS[G.songIndex];
+  const total = G.judged || 0;
+  const acc = total ? (G.accSum / total) * 100 : 0;
+  const rank = acc >= 97 ? 'S' : acc >= 92 ? 'A' : acc >= 85 ? 'B' : 'C';
+  $('#rankLetter').textContent = rank;
+  $('#rankRing').style.setProperty('--p', clamp(acc, 2, 100).toFixed(1) + '%');
+  $('#resultSong').textContent = song.ko + ' · ' + ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#resultScore').textContent = Math.round(G.score).toLocaleString('en-US');
+  $('#rAcc').textContent = acc.toFixed(2) + '%';
+  $('#rCombo').textContent = G.maxCombo;
+  $('#rNotes').textContent = G.notes.length;
+  $('#cPerfect').textContent = G.counts[0];
+  $('#cGreat').textContent = G.counts[1];
+  $('#cGood').textContent = G.counts[2];
+  $('#cMiss').textContent = G.counts[3];
+  const fc = G.counts[3] === 0 && G.notes.length > 0;
+  $('#resultHead').style.display = fc ? '' : 'none';
+
+  setTimeout(() => {
+    if (G.screen === 'result') $('#resultScreen').classList.remove('hidden');
+  }, 520);
+}
+
+/* ---------------------------- judging ---------------------------- */
+function popJudge(kind) {
+  popText(['PERFECT', 'GREAT', 'GOOD', 'MISS'][kind], ['perfect', 'great', 'good', 'miss'][kind]);
+}
+
+function popText(text, cls) {
+  const layer = $('#judgeLayer');
+  if (layer.childElementCount >= 3) layer.removeChild(layer.firstChild);
+  const el = document.createElement('div');
+  el.className = 'judge ' + cls;
+  el.textContent = text;
+  el.style.marginTop = (-30 * layer.childElementCount) + 'px';
+  layer.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 680);
+}
+
+function pressLane(lane) {
+  if (G.screen !== 'play' || G.paused) return;
+  const t = gameTimeNow();
+  if (t < -0.6) return;
+  let best = null, bestD = 9;
+  for (let i = 0; i < G.notes.length; i++) {
+    const n = G.notes[i];
+    if (n.judged || n.lane !== lane) continue;
+    const dt = n.t - t;
+    if (dt > 0.42) break;
+    const d = Math.abs(dt);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  laneTapVisual(lane);
+  G.presses++;
+  if (!best || bestD > MISS_W) return;
+  judgeNote(best, bestD);
+}
+
+function judgeNote(n, d) {
+  n.judged = true;
+  n.hit = true;
+  const k = d <= HIT_W[0] ? 0 : d <= HIT_W[1] ? 1 : 2;
+  G.counts[k]++;
+  G.judged++;
+  G.accSum += [1, 0.72, 0.4][k];
+  G.combo++;
+  if (G.combo > G.maxCombo) G.maxCombo = G.combo;
+
+  const mult = 1 + Math.min(1.2, Math.floor(G.combo / 15) * 0.1);
+  G.score += [1000, 690, 380][k] * mult * (G.fever ? 2 : 1);
+
+  if (!G.fever) {
+    G.energy = clamp(G.energy + [1.15, 0.7, 0.32][k], 0, 100);
+    if (G.energy >= 100) {
+      G.energy = 100;
+      triggerFever();
+    }
+  }
+
+  popJudge(k);
+  AUDIO.hitSfx(n.lane, k);
+
+  const x = LANE_X[n.lane];
+  emitBurst(x, NOTE_Y + 0.05, 0.1, LANE_HEX[n.lane], k === 0 ? 16 : k === 1 ? 11 : 7, k === 0 ? 1.15 : 0.85);
+  if (k === 0) emitRing(x, NOTE_Y, 0.05, LANE_HEX[n.lane], 1.25);
+  if (k === 0 && G.combo > 0 && G.combo % 25 === 0) {
+    emitRing(0, MASCOT_Y - 1.5, MASCOT_Z, 0xc9a6ff, 5.5);
+    emitBurst(0, MASCOT_Y - 0.6, MASCOT_Z, 0xd8bcff, 26, 1.4);
+    SC.mascot.comboGlow = 1;
+  }
+
+  G.camShake = Math.min(0.22, G.camShake + (k === 0 ? 0.09 : 0.05));
+  laneHitVisual(n.lane, k);
+  if (SC.mascot) SC.mascot.hitPulse = Math.min(1, SC.mascot.hitPulse + (k === 0 ? 0.85 : 0.5));
+}
+
+function missNote(n) {
+  n.judged = true;
+  n.missed = true;
+  G.counts[3]++;
+  G.judged++;
+  G.combo = 0;
+  G.energy = clamp(G.energy - 4.5, 0, 100);
+  if (G.fever) G.feverT = Math.max(0, G.feverT - 0.35);
+  popJudge(3);
+  if (SC.mascot) SC.mascot.missT = 1;
+  SC.rings[n.lane].pulse = Math.max(SC.rings[n.lane].pulse, 0.55);
+}
+
+function triggerFever() {
+  G.fever = true;
+  G.feverT = FEVER_TIME;
+  $('#app').dataset.fever = '1';
+  SC.mascot.comboGlow = 1;
+  emitRing(0, MASCOT_Y - 1.4, MASCOT_Z, 0xffd479, 7);
+  for (let i = 0; i < 4; i++) emitBurst(LANE_X[i], NOTE_Y, 0, LANE_HEX[i], 12, 1.2);
+  popText('FEVER!', 'perfect');
+}
+
+function laneTapVisual(lane) {
+  const pads = $$('.pad');
+  const el = pads[lane];
+  if (!el) return;
+  /* 터치/키 모두 잠깐 밝게 */
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { if (!el._held) el.classList.remove('on'); }, 110);
+}
+
+function laneHitVisual(lane) {
+  SC.rings[lane].pulse = 1;
+  G.laneFlash[lane] = 1;
+}
+
+/* ---------------------------- time ---------------------------- */
+function gameTimeNow() {
+  if (!AUDIO.ctx) return 0;
+  return AUDIO.ctx.currentTime - G.startTime - G.latency;
+}
+
+/* ---------------------------- loop ---------------------------- */
+let lastFrameT = 0;
+let dashT = 0;
+
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0.0005, (ts - lastFrameT) / 1000)) || 0.016;
+  lastFrameT = ts;
+  const wall = ts / 1000;
+  fpsAcc += dt; fpsN++;
+  update(dt, wall);
+  composer.render();
+}
+
+function update(dt, wall) {
+  const song = SONGS[G.songIndex];
+
+  if (G.screen === 'play' && !G.paused) {
+    G.time = gameTimeNow();
+    if (G.time < -0.35) G.time = -0.35;
+
+    /* 자동 판정 (테스트/관전) */
+    if (G.auto) {
+      for (const n of G.notes) {
+        if (n.judged) continue;
+        if (n.t - G.time > 0.025) break;
+        judgeNote(n, Math.min(MISS_W, Math.abs(n.t - G.time)));
+      }
+    }
+
+    /* 미스 판정 */
+    for (const n of G.notes) {
+      if (n.judged) continue;
+      if (n.t < G.time - MISS_W) missNote(n);
+      else if (n.t > G.time + 2) break;
+    }
+
+    /* 피버 */
+    if (G.fever) {
+      G.feverT -= dt;
+      G.energy = clamp((G.feverT / FEVER_TIME) * 100, 0, 100);
+      if (G.feverT <= 0) {
+        G.fever = false;
+        G.energy = 0;
+        $('#app').dataset.fever = '0';
+      }
+    }
+
+    /* 종료 */
+    if (G.time > songDuration(song) + 0.45) finishSong();
+
+    updateHUD(dt);
+  }
+
+  const spb = 60 / song.bpm;
+  const beatT = (G.screen === 'play' || G.screen === 'pause') ? G.time : wall;
+  const beat = beatT / spb;
+  const bp = beat - Math.floor(beat);
+  const pulse = Math.exp(-bp * 5.0);
+
+  updateStage(dt, wall, pulse, bp);
+  updateNotesVisual(G.screen === 'play' || G.screen === 'pause' ? G.time : -99);
+  updateFx(dt);
+}
+
+/* ---------------------------- HUD ---------------------------- */
+const hudCache = { score: -1, combo: -1, acc: -1, prog: -1, fever: -1, feverOn: null };
+function updateHUD(dt) {
+  G.shownScore = damp(G.shownScore, G.score, 12, dt);
+  const s = Math.round(G.shownScore);
+  if (s !== hudCache.score) {
+    $('#scoreVal').textContent = s.toLocaleString('en-US');
+    hudCache.score = s;
+  }
+  if (G.combo !== hudCache.combo) {
+    $('#comboVal').textContent = G.combo;
+    $('#comboBox').classList.toggle('on', G.combo >= 3);
+    const box = $('#comboBox');
+    box.classList.remove('pop');
+    void box.offsetWidth;
+    box.classList.add('pop');
+    hudCache.combo = G.combo;
+  }
+  const acc = G.judged ? (G.accSum / G.judged) * 100 : 100;
+  const accR = Math.round(acc * 100) / 100;
+  if (accR !== hudCache.acc) {
+    $('#accVal').textContent = accR.toFixed(2) + '%';
+    hudCache.acc = accR;
+  }
+  const dur = songDuration(SONGS[G.songIndex]);
+  const prog = clamp(G.time / dur, 0, 1);
+  const progR = Math.round(prog * 1000) / 10;
+  if (progR !== hudCache.prog) {
+    $('#progressFill').style.width = (prog * 100).toFixed(1) + '%';
+    $('#progressNum').textContent = Math.round(prog * 100) + '%';
+    hudCache.prog = progR;
+  }
+  const fv = Math.round(G.energy);
+  if (fv !== hudCache.fever) {
+    $('#feverFill').style.width = fv + '%';
+    $('#feverPct').textContent = fv + '%';
+    hudCache.fever = fv;
+  }
+  if (G.fever !== hudCache.feverOn) {
+    hudCache.feverOn = G.fever;
+    $('#feverWord').textContent = G.fever ? 'FEVER TIME' : 'FEVER';
+  }
+}
+
+/* ---------------------------- visuals ---------------------------- */
+function updateNotesVisual(t) {
+  const counts = [0, 0, 0, 0];
+  const approach = 1.72 / G.scroll;
+  const speed = -SPAWN_Z / approach;
+  for (let i = 0; i < G.notes.length; i++) {
+    const n = G.notes[i];
+    if (n.judged) continue;
+    const dz = n.t - t;
+    if (dz > approach + 0.35) break;
+    if (dz < -0.25) continue;
+    const lane = n.lane;
+    const pool = SC.notePools[lane];
+    if (counts[lane] >= NOTE_CAP) continue;
+    const z = -dz * speed;
+    const fadeIn = clamp((approach + 0.35 - dz) * 6, 0, 1);
+    const near = clamp(1 - Math.max(0, dz) / approach, 0, 1);
+    pool.dummy.position.set(LANE_X[lane], NOTE_Y, z);
+    const sc = 0.72 + 0.28 * fadeIn;
+    pool.dummy.scale.set(sc, sc * (1 + near * 0.06), sc);
+    pool.dummy.rotation.set(0, 0, 0);
+    pool.dummy.updateMatrix();
+    pool.inst.setMatrixAt(counts[lane], pool.dummy.matrix);
+    pool.dummy.position.set(LANE_X[lane], NOTE_Y, z + 0.25);
+    pool.dummy.scale.set(sc * (1 + near * 0.3), sc * (1 + near * 0.2), 1);
+    pool.dummy.updateMatrix();
+    pool.halo.setMatrixAt(counts[lane], pool.dummy.matrix);
+    counts[lane]++;
+  }
+  for (let l = 0; l < 4; l++) {
+    const pool = SC.notePools[l];
+    pool.inst.count = counts[l];
+    pool.inst.instanceMatrix.needsUpdate = true;
+    pool.halo.count = counts[l];
+    pool.halo.instanceMatrix.needsUpdate = true;
+  }
+}
+
+function updateStage(dt, wall, pulse, bp) {
+  const feverPulse = G.fever ? 1 : 0;
+  if (SC.floorMat) {
+    SC.floorMat.uniforms.uTime.value = wall;
+    SC.floorMat.uniforms.uBeat.value = pulse * 0.85 + (G.fever ? 0.4 : 0);
+    SC.floorMat.uniforms.uEnergy.value = damp(SC.floorMat.uniforms.uEnergy.value, G.fever ? 1 : G.energy / 100, 3, dt);
+  }
+  if (SC.skyMat) SC.skyMat.uniforms.uPulse.value = damp(SC.skyMat.uniforms.uPulse.value, pulse * 0.5 + feverPulse * 0.5, 8, dt);
+
+  /* 아치 */
+  for (let i = 0; i < SC.archMats.length; i++) {
+    const m = SC.archMats[i];
+    const k = i / SC.archMats.length;
+    m.opacity = (0.07 + 0.10 * pulse) * (1 - k * 0.5) * (G.fever ? 1.4 : 1);
+  }
+  if (SC.pillars) {
+    for (let i = 0; i < SC.pillars.length; i++) {
+      const p = SC.pillars[i];
+      p.mat.opacity = 0.14 + pulse * 0.34 + (G.fever ? 0.22 : 0) + Math.sin(wall * 2 + p.seed) * 0.03;
+    }
+  }
+  if (SC.moon) SC.moon.mat.opacity = 0.34 + pulse * 0.10 + (G.fever ? 0.2 : 0);
+
+  /* 레인 라이트 */
+  for (let i = 0; i < SC.laneLights.length; i++) {
+    const L = SC.laneLights[i];
+    const fl = G.laneFlash[i];
+    L.light.intensity = 4.0 + pulse * 5.5 + fl * 14 + (G.fever ? 4 : 0);
+    G.laneFlash[i] = damp(fl, 0, 9, dt);
+  }
+
+  /* 히트 패널 */
+  for (let i = 0; i < SC.rings.length; i++) {
+    const r = SC.rings[i];
+    r.pulse = damp(r.pulse, 0, 7, dt);
+    const g = SC.ringGlow[i];
+    const gs = 2.15 + r.pulse * 1.2 + pulse * 0.18;
+    g.sp.scale.set(gs, gs * 0.52, 1);
+    g.mat.opacity = 0.035 + r.pulse * 0.3 + pulse * 0.02;
+    if (SC.slots && SC.slots[i]) {
+      SC.slots[i].mat.opacity = 0.55 + r.pulse * 0.45 + pulse * 0.18;
+      SC.slots[i].mesh.scale.set(1 + r.pulse * 0.08, 1 + r.pulse * 1.6, 1 + r.pulse * 0.8);
+    }
+    if (SC.panels && SC.panels[i]) {
+      SC.panels[i].mat.opacity = 0.035 + r.pulse * 0.14 + pulse * 0.02;
+    }
+  }
+  if (SC.zone) SC.zone.mat.opacity = 0.07 + pulse * 0.06 + (G.fever ? 0.05 : 0);
+
+  /* 카메라 */
+  const shake = G.camShake;
+  G.camShake = damp(shake, 0, 8, dt);
+  const sx = (Math.sin(wall * 61.7) + Math.sin(wall * 37.3)) * 0.5 * shake;
+  const sy = (Math.sin(wall * 53.1) + Math.sin(wall * 29.7)) * 0.5 * shake;
+  const title = G.screen === 'title';
+  const C = (window.innerWidth / window.innerHeight) < 0.95 ? CAM.port : CAM.land;
+  const drift = title ? Math.sin(wall * 0.34) * 0.5 : 0;
+  const driftY = title ? Math.sin(wall * 0.27) * 0.18 : 0;
+  camera.position.x = damp(camera.position.x, C.p[0] + sx + drift, 4, dt);
+  camera.position.y = damp(camera.position.y, C.p[1] + sy + driftY, 4, dt);
+  camera.position.z = damp(camera.position.z, C.p[2] - (G.fever ? 0.45 : 0), 3, dt);
+  camera.lookAt(drift * 0.3, C.t[1] + (title ? Math.sin(wall * 0.4) * 0.18 : 0), C.t[2]);
+
+  /* 마스코트 */
+  updateMascot(dt, wall, pulse, bp);
+
+  if (SC.stars) SC.stars.rotation.y = wall * 0.008;
+
+  /* 블룸 */
+  const targetBloom = (G.fever ? 1.0 : 0.42) + pulse * 0.05;
+  bloomPass.strength = damp(bloomPass.strength, targetBloom, 4, dt);
+}
+
+function updateMascot(dt, wall, pulse, bp) {
+  const M = SC.mascot;
+  if (!M) return;
+  M.hitPulse = damp(M.hitPulse, 0, 6, dt);
+  M.missT = damp(M.missT, 0, 3.2, dt);
+  M.comboGlow = damp(M.comboGlow, 0, 1.6, dt);
+
+  const idle = Math.sin(wall * 1.6) * 0.06;
+  const bounce = pulse * 0.30;
+  const feverLift = G.fever ? 0.45 + Math.sin(wall * 6) * 0.06 : 0;
+  M.group.position.y = M.baseY + idle + bounce + feverLift;
+
+  const sq = 1 + pulse * 0.05 + M.hitPulse * 0.11 - M.missT * 0.07;
+  const sxz = 1 - pulse * 0.035 - M.hitPulse * 0.05 + M.missT * 0.05;
+  M.group.scale.set(M.baseScale * sxz, M.baseScale * sq, M.baseScale * sxz);
+
+  /* 콤보/피버 스핀 */
+  const spinSpeed = G.fever ? 1.6 : M.comboGlow * 1.2;
+  M.spin += dt * spinSpeed;
+  M.group.rotation.z = Math.sin(M.spin) * (G.fever ? 0.10 : 0.05) - M.missT * 0.18 * Math.sin(wall * 26);
+  M.group.rotation.y = G.fever ? Math.sin(M.spin * 0.9) * 0.22 : Math.sin(wall * 0.7) * 0.06;
+
+  /* 얼굴 표정 */
+  M.eyes.forEach((e, i) => {
+    const px = Math.sin(wall * 0.9 + i) * 0.025;
+    e.pupil.position.x = (i === 0 ? -1 : 1) * 0.25 + px;
+    e.pupil.position.y = 0.065 + Math.sin(wall * 1.3 + i * 0.7) * 0.012 - M.missT * 0.03;
+    const blink = M.blink > 0;
+    e.eye.scale.y = blink ? 0.12 : 1.08;
+    e.pupil.scale.y = blink ? 0.12 : 1.05;
+    e.spark.visible = !blink;
+  });
+  M.blinkT -= dt;
+  if (M.blinkT <= 0) { M.blink = 1; M.blinkT = 2.6 + Math.random() * 2.6; }
+  M.blink = Math.max(0, M.blink - dt * 9);
+
+  /* 감정 색 */
+  const feverMix = G.fever ? 1 : 0;
+  const missMix = M.missT;
+  const base = new THREE.Color(0xd7bcff);
+  const gold = new THREE.Color(0xffd9a0);
+  const blue = new THREE.Color(0xa8b6ff);
+  const c = base.clone().lerp(gold, feverMix * 0.85).lerp(blue, missMix * 0.5);
+  M.bodyMat.color.lerp(c, 1 - Math.exp(-6 * dt));
+  M.bodyMat.emissiveIntensity = 0.32 + M.hitPulse * 0.5 + (G.fever ? 0.22 : 0) + pulse * 0.1;
+  M.bodyMat.emissive.setHex(G.fever ? 0xc07a20 : 0x6d3fc0);
+
+  M.halo.rotation.z += dt * (0.6 + M.comboGlow * 2.2 + (G.fever ? 3 : 0));
+  const hs = 1 + M.comboGlow * 0.18 + (G.fever ? 0.2 : 0);
+  M.halo.scale.set(hs, hs, 1);
+  M.haloMat.opacity = 0.18 + pulse * 0.12 + M.comboGlow * 0.35 + (G.fever ? 0.25 : 0);
+  M.haloMat.color.setHex(G.fever ? 0xffc46b : 0xb98cff);
+
+  M.auraMat.opacity = 0.22 + pulse * 0.12 + M.hitPulse * 0.2 + (G.fever ? 0.18 : 0);
+  M.auraMat.color.setHex(G.fever ? 0xffb45e : 0xa678ff);
+  const as = 5.8 + pulse * 0.4 + M.hitPulse * 0.7 + (G.fever ? 1.4 : 0);
+  M.aura.scale.set(as, as, 1);
+}
+
+/* ---------------------------- input ---------------------------- */
+const KEY_LANE = { d: 0, f: 1, j: 2, k: 3, arrowleft: 0, arrowdown: 1, arrowup: 2, arrowright: 3 };
+
+function bindUI() {
+  /* 곡/난이도/옵션 */
+  $$('#diffSeg button').forEach((b) => b.addEventListener('click', () => {
+    if (AUDIO.ctx) AUDIO.uiClick();
+    selectDiff(+b.dataset.diff);
+  }));
+  $$('#speedSeg button').forEach((b) => b.addEventListener('click', () => {
+    if (AUDIO.ctx) AUDIO.uiClick();
+    selectSpeed(+b.dataset.speed);
+  }));
+  $('#volRange').addEventListener('input', (e) => {
+    AUDIO.vol = +e.target.value / 100;
+    $('#volVal').textContent = e.target.value;
+    AUDIO.setVolume(AUDIO.vol);
+    savePrefs();
+  });
+  $('#offsetRange').addEventListener('input', (e) => {
+    G.offsetMs = +e.target.value;
+    $('#offsetVal').textContent = G.offsetMs + 'ms';
+    savePrefs();
+  });
+  $('#sfxToggle').addEventListener('click', (e) => {
+    AUDIO.sfxOn = !AUDIO.sfxOn;
+    e.currentTarget.classList.toggle('on', AUDIO.sfxOn);
+    e.currentTarget.setAttribute('aria-checked', String(AUDIO.sfxOn));
+    if (AUDIO.sfxOn) AUDIO.uiClick();
+    savePrefs();
+  });
+
+  $('#startBtn').addEventListener('click', () => { startGame(); });
+  $('#pauseBtn').addEventListener('click', () => pauseGame());
+  $('#restartHud').addEventListener('click', () => { resumeCtxThen(startGame); });
+  $('#resumeBtn').addEventListener('click', () => resumeGame());
+  $('#restartBtn').addEventListener('click', () => { resumeCtxThen(startGame); });
+  $('#quitBtn').addEventListener('click', () => quitToMenu());
+  $('#againBtn').addEventListener('click', () => { startGame(); });
+  $('#menuBtn').addEventListener('click', () => quitToMenu());
+
+  /* 터치 패드 */
+  $$('.pad').forEach((pad) => {
+    const lane = +pad.dataset.lane;
+    const ids = new Set();
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+      ids.add(e.pointerId);
+      pad._held = true;
+      pad.classList.add('on');
+      pressLane(lane);
+    }, { passive: false });
+    const release = (e) => {
+      ids.delete(e.pointerId);
+      if (!ids.size) { pad._held = false; pad.classList.remove('on'); }
+    };
+    pad.addEventListener('pointerup', release);
+    pad.addEventListener('pointercancel', release);
+    pad.addEventListener('lostpointercapture', release);
+    pad.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+
+  /* 키보드 */
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (e.repeat) {
+      if (KEY_LANE[k] !== undefined && G.screen === 'play') e.preventDefault();
+      return;
+    }
+    if (G.screen === 'play') {
+      if (k === ' ') { e.preventDefault(); pauseGame(); return; }
+      if (k === 'escape') { e.preventDefault(); pauseGame(); return; }
+      if (KEY_LANE[k] !== undefined) {
+        e.preventDefault();
+        pressLane(KEY_LANE[k]);
+        return;
+      }
+    } else if (G.screen === 'pause') {
+      if (k === ' ' || k === 'escape') { e.preventDefault(); resumeGame(); return; }
+      if (k === 'r') { e.preventDefault(); resumeCtxThen(startGame); return; }
+    } else if (G.screen === 'title') {
+      if (k === 'arrowup' || k === 'w') { e.preventDefault(); selectSong(G.songIndex - 1); return; }
+      if (k === 'arrowdown' || k === 's') { e.preventDefault(); selectSong(G.songIndex + 1); return; }
+      if (k === 'arrowleft' || k === 'a') { e.preventDefault(); selectDiff(G.diff - 1); return; }
+      if (k === 'arrowright') { e.preventDefault(); selectDiff(G.diff + 1); return; }
+      if (k === '1' || k === '2' || k === '3') { e.preventDefault(); selectDiff(+k - 1); return; }
+      if (k === 'enter' || k === ' ') { e.preventDefault(); startGame(); return; }
+    } else if (G.screen === 'result') {
+      if (k === 'enter' || k === ' ') { e.preventDefault(); startGame(); return; }
+      if (k === 'escape') { e.preventDefault(); quitToMenu(); return; }
+    }
+  }, { passive: false });
+
+  window.addEventListener('keyup', (e) => {
+    if (G.screen !== 'play') return;
+    const lane = KEY_LANE[e.key.toLowerCase()];
+    if (lane !== undefined) {
+      const pad = $$('.pad')[lane];
+      if (pad && !pad._held) pad.classList.remove('on');
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && G.screen === 'play') pauseGame();
+  });
+
+  window.addEventListener('contextmenu', (e) => {
+    if (G.screen === 'play') e.preventDefault();
+  });
+}
+
+async function resumeCtxThen(fn) {
+  if (AUDIO.ctx) { try { await AUDIO.ctx.resume(); } catch (e) {} }
+  fn();
+}
+
+/* ---------------------------- debug API ---------------------------- */
+window.PICKLE = {
+  G, SC, AUDIO, MUSIC, SONGS,
+  start: (i, d) => { if (typeof i === 'number') G.songIndex = i; if (typeof d === 'number') G.diff = d; return startGame(); },
+  press: pressLane,
+  pause: pauseGame,
+  resume: resumeGame,
+  menu: quitToMenu,
+  setAuto: (v) => { G.auto = !!v; },
+  chart: () => buildChart(SONGS[G.songIndex], G.diff).length,
+  snapshot: () => ({
+    screen: G.screen,
+    time: +G.time.toFixed(3),
+    score: Math.round(G.score),
+    combo: G.combo,
+    maxCombo: G.maxCombo,
+    judged: G.judged,
+    total: G.notes.length,
+    counts: G.counts.slice(),
+    acc: G.judged ? +((G.accSum / G.judged) * 100).toFixed(2) : 100,
+    fever: G.fever,
+    presses: G.presses,
+    energy: Math.round(G.energy),
+    activeNotes: G.notes.filter((n) => !n.judged).length,
+    visibleNotes: SC.notePools.reduce((a, p) => a + p.inst.count, 0),
+    audioState: AUDIO.ctx ? AUDIO.ctx.state : 'none',
+    audioTime: AUDIO.ctx ? +AUDIO.ctx.currentTime.toFixed(3) : 0,
+    fps: lastFps,
+  }),
+};
+let lastFps = 0;
+let fpsAcc = 0, fpsN = 0;
+setInterval(() => {
+  if (fpsAcc > 0.05) lastFps = Math.round(fpsN / fpsAcc);
+  fpsAcc = 0; fpsN = 0;
+}, 500);
+
+/* boot on next frame */
+requestAnimationFrame(() => {
+  try {
+    boot();
+  } catch (err) {
+    const b = $('#boot');
+    if (b) {
+      b.classList.add('err');
+      b.querySelector('span').textContent = '게임을 시작하지 못했어요: ' + err.message;
+    }
+    console.error(err);
+  }
+});
+
+</script>
+</body>
+</html>
+
