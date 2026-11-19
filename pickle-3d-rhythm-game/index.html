@@ -228,6 +228,18 @@ input{font-family:inherit}
 /* --- title --- */
 .title-wrap{width:min(760px,100%);display:flex;flex-direction:column;gap:clamp(12px,2.2vh,22px);margin:auto}
 .brand{display:flex;align-items:center;gap:14px}
+.brand-txt{min-width:0;flex:1 1 auto}
+.lang-pills{
+  display:flex;gap:2px;padding:3px;border-radius:99px;flex:0 0 auto;margin-left:auto;align-self:flex-start;
+  background:rgba(8,4,18,.55);border:1px solid rgba(255,255,255,.08);
+}
+.lang-pills button{
+  padding:4px 7px;border-radius:99px;font-size:9px;font-weight:800;letter-spacing:.06em;
+  color:var(--dim2);position:relative;pointer-events:auto;
+  transition:color .16s,background .16s,box-shadow .16s;
+}
+.lang-pills button:hover{color:#fff}
+.lang-pills button.on{color:#120a22;background:linear-gradient(100deg,#e6dbff,#a9ecff);box-shadow:0 0 14px rgba(160,110,255,.5)}
 .brand-mark{
   width:clamp(46px,7vw,62px);height:clamp(46px,7vw,62px);border-radius:50%;
   position:relative;flex:0 0 auto;
@@ -254,7 +266,7 @@ input{font-family:inherit}
   filter:drop-shadow(0 0 22px rgba(160,110,255,.45));
 }
 .brand h1 em{font-style:normal;font-size:.52em;letter-spacing:.06em;color:#7fe9ff;-webkit-text-fill-color:#7fe9ff;vertical-align:.28em;margin-left:.18em;opacity:.9}
-.brand-sub{margin:6px 0 0;font-size:10px;letter-spacing:.28em;color:var(--dim2);font-weight:600;text-transform:uppercase}
+.brand-sub{margin:6px 0 0;font-size:10px;letter-spacing:.28em;color:var(--dim2);font-weight:600;text-transform:uppercase;word-break:keep-all;line-height:1.45;overflow-wrap:anywhere}
 
 .panel{
   border-radius:22px;padding:clamp(14px,2.6vw,22px);
@@ -270,8 +282,8 @@ input{font-family:inherit}
   pointer-events:none;
 }
 .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.panel-head h2{margin:0;font-size:12px;letter-spacing:.3em;color:var(--dim);font-weight:700;text-transform:uppercase}
-.hint{font-size:10px;color:var(--dim2);letter-spacing:.08em}
+.panel-head h2{margin:0;font-size:12px;letter-spacing:.3em;color:var(--dim);font-weight:700;text-transform:uppercase;white-space:nowrap}
+.hint{font-size:10px;color:var(--dim2);letter-spacing:.08em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 
 .songs{display:flex;flex-direction:column;gap:8px}
 .song{
@@ -305,7 +317,7 @@ input{font-family:inherit}
 .song.sel .bpm{border-color:rgba(201,166,255,.35);color:#fff}
 
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-.row.opts{display:grid;grid-template-columns:1fr 1fr 1.1fr auto;gap:12px;align-items:end}
+.row.opts{display:grid;grid-template-columns:1fr 1.1fr auto;gap:12px;align-items:end}
 .row.opts .field{flex:none}
 .field{display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:0}
 .field label{font-size:9.5px;letter-spacing:.2em;color:var(--dim2);font-weight:700;text-transform:uppercase}
@@ -362,6 +374,110 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
 .start-btn:active{transform:scale(.985);filter:brightness(1.08)}
 .start-btn[disabled]{opacity:.5;filter:grayscale(.4)}
 .title-foot{text-align:center;font-size:10.5px;color:var(--dim2);letter-spacing:.1em}
+
+/* ---------- offset preview + sync test ---------- */
+.offset-card{
+  position:relative;border-radius:16px;padding:11px 13px 12px;
+  background:linear-gradient(155deg,rgba(74,46,140,.26),rgba(12,7,26,.62));
+  border:1px solid rgba(201,166,255,.18);
+  display:flex;flex-direction:column;gap:7px;
+  transition:border-color .3s,box-shadow .3s,background .3s;
+}
+.offset-card.live{
+  border-color:rgba(127,233,255,.40);
+  box-shadow:0 0 0 1px rgba(127,233,255,.10),0 16px 40px -26px rgba(127,233,255,.9);
+}
+.oc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.oc-title{
+  font-size:9.5px;letter-spacing:.18em;color:var(--dim2);font-weight:700;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;min-width:0;
+}
+.oc-title>span{overflow:hidden;text-overflow:ellipsis}
+.oc-title b{
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--lilac);
+  padding:1px 7px;border-radius:8px;background:rgba(201,166,255,.10);border:1px solid rgba(201,166,255,.18);
+  transition:color .2s,background .2s,border-color .2s,box-shadow .2s;
+  flex:0 0 auto;text-transform:none;
+}
+.oc-title b.pos{color:#241405;background:linear-gradient(100deg,#ffd479,#ffb36b);border-color:transparent;box-shadow:0 0 16px rgba(255,190,90,.4)}
+.oc-title b.neg{color:#04202a;background:linear-gradient(100deg,#a5ffe4,#7fe9ff);border-color:transparent;box-shadow:0 0 16px rgba(127,233,255,.4)}
+.sync-toggle{
+  display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;
+  padding:6px 11px;border-radius:99px;
+  font-size:9.5px;font-weight:800;letter-spacing:.08em;white-space:nowrap;
+  color:#ded2ff;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);
+  transition:background .2s,color .2s,border-color .2s,box-shadow .2s,transform .12s;
+  pointer-events:auto;
+}
+.sync-toggle:active{transform:scale(.96)}
+.sync-toggle i{width:6px;height:6px;border-radius:50%;background:var(--dim2);flex:0 0 auto;transition:background .2s,box-shadow .2s}
+.sync-toggle.on{color:#05202a;background:linear-gradient(100deg,#a5ffe4,#7fe9ff);border-color:transparent;box-shadow:0 0 20px rgba(127,233,255,.45)}
+.sync-toggle.on i{background:#05202a;animation:syncDot 1s steps(2,end) infinite}
+@keyframes syncDot{0%,49%{opacity:1}50%,100%{opacity:.3}}
+.oc-hint{margin:0;font-size:10px;line-height:1.5;letter-spacing:.005em;color:var(--dim);min-height:15px}
+.oc-hint.pos{color:#ffdca8}
+.oc-hint.neg{color:#bdf3ff}
+.oc-hint.flash{animation:hintFlash .5s ease}
+@keyframes hintFlash{0%{filter:brightness(1.75)}60%{filter:brightness(1.2)}100%{filter:none}}
+.sync-view{display:flex;flex-direction:column;gap:6px}
+@keyframes syncIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.sync-track{
+  position:relative;height:42px;border-radius:12px;overflow:hidden;cursor:pointer;
+  background:linear-gradient(180deg,rgba(5,2,12,.9),rgba(20,11,42,.72));
+  border:1px solid rgba(201,166,255,.14);
+  box-shadow:inset 0 2px 10px rgba(0,0,0,.55);
+  touch-action:none;pointer-events:auto;
+}
+.sync-track::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.055) 0 1px,transparent 1px 12.5%);
+}
+.sync-zone{
+  position:absolute;top:0;bottom:0;left:58%;width:2px;transform:translateX(-50%);
+  background:linear-gradient(180deg,transparent,rgba(127,233,255,.95),transparent);
+  box-shadow:0 0 12px rgba(127,233,255,.7);transition:box-shadow .12s;
+  pointer-events:none;
+}
+.sync-zone::after{
+  content:"";position:absolute;left:50%;top:50%;width:30px;height:30px;transform:translate(-50%,-50%);
+  border-radius:50%;border:1px solid rgba(127,233,255,.26);
+  transition:border-color .12s,box-shadow .12s,transform .12s;
+}
+.sync-track.hot .sync-zone{box-shadow:0 0 24px rgba(127,233,255,1),0 0 46px rgba(127,233,255,.45)}
+.sync-track.hot .sync-zone::after{border-color:rgba(127,233,255,.85);box-shadow:0 0 22px rgba(127,233,255,.55);transform:translate(-50%,-50%) scale(1.12)}
+.sync-note,.sync-ghost{
+  position:absolute;top:50%;left:58%;width:12px;height:26px;border-radius:6px;
+  transform:translate(-50%,-50%);opacity:0;will-change:left;
+  pointer-events:none;
+}
+.sync-note{
+  background:linear-gradient(180deg,#fff,#c9a6ff);
+  box-shadow:0 0 14px rgba(201,166,255,.85),0 0 30px rgba(140,90,255,.4);
+  transition:opacity .18s,background .12s,box-shadow .12s;
+}
+.sync-note.on{opacity:1}
+.sync-track.idle .sync-note{opacity:.8;background:linear-gradient(180deg,#efe4ff,#a98cff);box-shadow:0 0 12px rgba(201,166,255,.6)}
+.sync-track.hot .sync-note{background:linear-gradient(180deg,#fff,#7fe9ff);box-shadow:0 0 22px rgba(127,233,255,.95),0 0 44px rgba(127,233,255,.4)}
+.sync-ghost{border:1px dashed rgba(201,166,255,.55);transition:opacity .2s}
+.sync-ghost.on{opacity:.5}
+.sync-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:22px}
+.sync-delta{
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--dim2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+}
+.sync-delta em{font-style:normal;font-family:var(--font);font-size:9px;letter-spacing:.06em;color:var(--dim2);margin-left:5px}
+.sync-delta .perfect{color:var(--mint);text-shadow:0 0 12px rgba(141,255,214,.55)}
+.sync-delta .late{color:var(--gold)}
+.sync-delta .early{color:var(--cyan)}
+.sync-apply{
+  flex:0 0 auto;padding:5px 10px;border-radius:99px;font-size:9px;font-weight:800;letter-spacing:.05em;white-space:nowrap;
+  color:#0b1f16;background:linear-gradient(100deg,#a5ffe4,#8dffd6);border:1px solid transparent;
+  transition:opacity .2s,filter .2s,transform .12s;pointer-events:auto;
+}
+.sync-apply:active{transform:scale(.96)}
+.sync-apply[disabled]{opacity:.32;filter:grayscale(.55);pointer-events:none}
+.sync-tip{margin:0;font-size:8.5px;letter-spacing:.04em;color:var(--dim2);line-height:1.45;display:none}
+.sync-view.on .sync-tip{display:block;animation:syncIn .3s ease}
 
 /* ---------- modal (pause / result) ---------- */
 .modal{
@@ -458,6 +574,19 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   .song .bpm{display:none}
   .field{flex:1 1 100%}
   .row.opts{grid-template-columns:1fr 1fr;gap:10px}
+  .lang-pills{padding:2px;gap:1px}
+  .lang-pills button{padding:4px 5px;font-size:8px;letter-spacing:.02em}
+  .offset-card{padding:10px 11px 11px;border-radius:14px;gap:6px}
+  .oc-title{font-size:9px;letter-spacing:.12em;gap:5px}
+  .oc-title b{font-size:11px;padding:1px 5px}
+  .sync-toggle{padding:5px 9px;font-size:9px;letter-spacing:.04em}
+  .oc-hint{font-size:9.5px}
+  .sync-track{height:40px}
+  .sync-delta{font-size:10px}
+  .title-wrap{gap:11px}
+  .panel{gap:13px}
+  .sync-view{gap:5px}
+  .sync-tip{font-size:8px}
   .row.opts .field{flex:none}
   .combo-box{top:15%;left:50%;transform:translate(-50%,-50%) scale(.9);align-items:center}
   .judge{top:53%}
@@ -467,6 +596,18 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   .result-score span{font-size:34px}
   .rank-ring{width:96px;height:96px}
   .rank-ring span{font-size:42px}
+}
+@media (min-width:521px) and (max-height:900px){
+  .title-wrap{gap:13px}
+  .panel{padding:16px 18px;gap:11px}
+  .song{padding:9px 12px}
+  .song .chip{width:30px;height:30px;border-radius:10px}
+  .song .meta b{font-size:14px}
+  .offset-card{padding:9px 12px 10px;gap:6px}
+  .sync-track{height:36px}
+  .oc-hint{font-size:9.5px;line-height:1.45}
+  .sync-delta{font-size:10px}
+  .start-btn{padding:14px}
 }
 @media (max-height:680px){
   .brand{gap:10px}
@@ -491,7 +632,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
   <div id="hud" class="layer">
     <div class="hud-top">
       <div class="hud-score">
-        <span class="k">SCORE</span>
+        <span class="k" data-i18n="hudScore">SCORE</span>
         <span class="v" id="scoreVal">0</span>
       </div>
       <div class="hud-mid">
@@ -500,16 +641,16 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
       </div>
       <div class="hud-right">
-        <button id="restartHud" class="round-btn" aria-label="다시 시작">⟲</button>
-        <button id="pauseBtn" class="round-btn" aria-label="일시정지">❚❚</button>
+        <button id="restartHud" class="round-btn" data-i18n-aria="ariaRestart" aria-label="다시 시작">⟲</button>
+        <button id="pauseBtn" class="round-btn" data-i18n-aria="ariaPause" aria-label="일시정지">❚❚</button>
       </div>
     </div>
 
-    <div id="comboBox" class="combo-box"><span id="comboVal">0</span><small>COMBO</small></div>
+    <div id="comboBox" class="combo-box"><span id="comboVal">0</span><small data-i18n="hudCombo">COMBO</small></div>
     <div id="judgeLayer" class="judge-layer"></div>
 
     <div class="fever-wrap">
-      <div class="fever-label"><span id="feverWord">FEVER</span><b id="feverPct">0%</b></div>
+      <div class="fever-label"><span id="feverWord" data-i18n="fever">FEVER</span><b id="feverPct">0%</b></div>
       <div class="fever-bar"><div id="feverFill"></div><i></i></div>
     </div>
   </div>
@@ -527,68 +668,93 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
     <div class="title-wrap">
       <header class="brand">
         <div class="brand-mark"></div>
-        <div>
-          <h1>피클 <em>3D</em></h1>
-          <p class="brand-sub">Pickle Rhythm · 네온 리듬 하이웨이</p>
+        <div class="brand-txt">
+          <h1><span data-i18n="brand">피클</span> <em>3D</em></h1>
+          <p class="brand-sub" data-i18n="sub">Pickle Rhythm · 네온 리듬 하이웨이</p>
+        </div>
+        <div class="lang-pills" id="langPills" role="group" data-i18n-aria="lang" aria-label="언어">
+          <button data-lang="ko" class="on">KO</button>
+          <button data-lang="en">EN</button>
+          <button data-lang="ja">JA</button>
+          <button data-lang="zh">ZH</button>
+          <button data-lang="es">ES</button>
         </div>
       </header>
 
       <section class="panel">
-        <div class="panel-head"><h2>곡 선택</h2><span class="hint">↑ ↓ 이동 · Enter 시작</span></div>
+        <div class="panel-head"><h2 data-i18n="songSelect">곡 선택</h2><span class="hint" data-i18n="songHint">↑ ↓ 이동 · Enter 시작</span></div>
         <div class="songs" id="songList"></div>
 
         <div class="row">
           <div class="field">
-            <label>난이도</label>
+            <label data-i18n="diff">난이도</label>
             <div class="seg" id="diffSeg">
-              <button data-diff="0">EASY<small>Lv.3</small></button>
-              <button data-diff="1" class="on">NORMAL<small>Lv.7</small></button>
-              <button data-diff="2">HARD<small>Lv.12</small></button>
+              <button data-diff="0"><span data-i18n="diffEasy">EASY</span><small>Lv.3</small></button>
+              <button data-diff="1" class="on"><span data-i18n="diffNormal">NORMAL</span><small>Lv.7</small></button>
+              <button data-diff="2"><span data-i18n="diffHard">HARD</span><small>Lv.12</small></button>
             </div>
           </div>
         </div>
 
         <div class="row opts">
           <div class="field">
-            <label>볼륨 <b id="volVal">80</b></label>
-            <input id="volRange" type="range" min="0" max="100" step="1" value="80" aria-label="볼륨">
+            <label><span data-i18n="vol">볼륨</span> <b id="volVal">80</b></label>
+            <input id="volRange" type="range" min="0" max="100" step="1" value="80" data-i18n-aria="vol" aria-label="볼륨">
           </div>
           <div class="field">
-            <label>판정 오프셋 <b id="offsetVal">0ms</b></label>
-            <input id="offsetRange" type="range" min="-120" max="120" step="5" value="0" aria-label="판정 오프셋">
-          </div>
-          <div class="field">
-            <label>스크롤</label>
+            <label data-i18n="speed">스크롤</label>
             <div class="seg tiny" id="speedSeg">
-              <button data-speed="0.82">느리게</button>
-              <button data-speed="1" class="on">보통</button>
-              <button data-speed="1.32">빠르게</button>
+              <button data-speed="0.82" data-i18n="speedSlow">느리게</button>
+              <button data-speed="1" class="on" data-i18n="speedMid">보통</button>
+              <button data-speed="1.32" data-i18n="speedFast">빠르게</button>
             </div>
           </div>
           <div class="field">
-            <label>타격음</label>
-            <button id="sfxToggle" class="switch on" role="switch" aria-checked="true" aria-label="타격음"><span></span></button>
+            <label data-i18n="sfx">타격음</label>
+            <button id="sfxToggle" class="switch on" role="switch" aria-checked="true" data-i18n-aria="sfx" aria-label="타격음"><span></span></button>
           </div>
         </div>
 
-        <button id="startBtn" class="start-btn">START<small>ENTER</small></button>
+        <!-- offset + live sync test -->
+        <div class="offset-card" id="offsetCard">
+          <div class="oc-top">
+            <div class="oc-title"><span data-i18n="offset">판정 오프셋</span> <b id="offsetVal">0ms</b></div>
+            <button id="syncToggle" class="sync-toggle" aria-pressed="false" data-i18n-aria="syncStartAria" aria-label="싱크 테스트 켜기"><i></i><span id="syncToggleText" data-i18n="syncTest">싱크 테스트</span></button>
+          </div>
+          <input id="offsetRange" type="range" min="-120" max="120" step="5" value="0" data-i18n-aria="offset" aria-label="판정 오프셋">
+          <p class="oc-hint" id="offsetHint">0ms · 기본 동기화</p>
+          <div class="sync-view" id="syncView">
+            <div class="sync-track idle" id="syncTrack" role="button" tabindex="-1" data-i18n-aria="syncTrackAria" aria-label="싱크 테스트 박자 트랙">
+              <span class="sync-zone" id="syncZone"></span>
+              <span class="sync-ghost" id="syncGhost"></span>
+              <span class="sync-note" id="syncNote"></span>
+            </div>
+            <div class="sync-foot">
+              <span class="sync-delta" id="syncDelta">박자에 맞춰 두드려 보세요</span>
+              <button class="sync-apply" id="syncApply" disabled data-i18n="syncApply">평균 오프셋 적용</button>
+            </div>
+            <p class="sync-tip" data-i18n="syncTip">트랙을 두드리거나 D F J K Space · 120 BPM</p>
+          </div>
+        </div>
+
+        <button id="startBtn" class="start-btn"><span data-i18n="start">START</span><small>ENTER</small></button>
       </section>
 
-      <footer class="title-foot">D · F · J · K &nbsp;|&nbsp; 모바일은 하단 4패드 &nbsp;|&nbsp; Space 일시정지</footer>
+      <footer class="title-foot" data-i18n="foot">D · F · J · K &nbsp;|&nbsp; 모바일은 하단 4패드 &nbsp;|&nbsp; Space 일시정지</footer>
     </div>
   </div>
 
   <!-- ============ PAUSE ============ -->
   <div id="pauseScreen" class="overlay hidden">
     <div class="modal">
-      <h2>일시정지</h2>
+      <h2 data-i18n="pauseTitle">일시정지</h2>
       <p id="pauseInfo">—</p>
       <div class="modal-btns">
-        <button id="resumeBtn" class="start-btn">계속하기<small>SPACE</small></button>
-        <button id="restartBtn" class="ghost-btn">처음부터</button>
-        <button id="quitBtn" class="ghost-btn">곡 선택</button>
+        <button id="resumeBtn" class="start-btn"><span data-i18n="resume">계속하기</span><small>SPACE</small></button>
+        <button id="restartBtn" class="ghost-btn" data-i18n="restart">처음부터</button>
+        <button id="quitBtn" class="ghost-btn" data-i18n="songSelect">곡 선택</button>
       </div>
-      <p class="tiny-hint">ESC 로도 계속할 수 있어요</p>
+      <p class="tiny-hint" data-i18n="escHint">ESC 로도 계속할 수 있어요</p>
     </div>
   </div>
 
@@ -597,12 +763,12 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
     <div class="modal result">
       <div class="rank-ring" id="rankRing"><span id="rankLetter">S</span></div>
       <p class="result-song" id="resultSong">—</p>
-      <div id="resultHead" class="fc-badge" style="display:none">FULL COMBO</div>
-      <div class="result-score"><span id="resultScore">0</span><small>SCORE</small></div>
+      <div id="resultHead" class="fc-badge" style="display:none" data-i18n="fullCombo">FULL COMBO</div>
+      <div class="result-score"><span id="resultScore">0</span><small data-i18n="scoreLabel">SCORE</small></div>
       <div class="result-stats">
-        <div><b id="rAcc">0.00%</b><span>정확도</span></div>
-        <div><b id="rCombo">0</b><span>최대 콤보</span></div>
-        <div><b id="rNotes">0</b><span>노트 수</span></div>
+        <div><b id="rAcc">0.00%</b><span data-i18n="accLabel">정확도</span></div>
+        <div><b id="rCombo">0</b><span data-i18n="comboLabel">최대 콤보</span></div>
+        <div><b id="rNotes">0</b><span data-i18n="notesLabel">노트 수</span></div>
       </div>
       <div class="judge-counts">
         <div class="p"><span>PERFECT</span><b id="cPerfect">0</b></div>
@@ -611,13 +777,13 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
         <div class="m"><span>MISS</span><b id="cMiss">0</b></div>
       </div>
       <div class="modal-btns">
-        <button id="againBtn" class="start-btn">다시 하기<small>ENTER</small></button>
-        <button id="menuBtn" class="ghost-btn">곡 선택</button>
+        <button id="againBtn" class="start-btn"><span data-i18n="again">다시 하기</span><small>ENTER</small></button>
+        <button id="menuBtn" class="ghost-btn" data-i18n="songSelect">곡 선택</button>
       </div>
     </div>
   </div>
 
-  <div id="boot" class="boot"><div class="boot-ring"></div><span>피클을 깨우는 중…</span></div>
+  <div id="boot" class="boot"><div class="boot-ring"></div><span data-i18n="boot">피클을 깨우는 중…</span></div>
 </div>
 
 <script type="importmap">
@@ -629,16 +795,25 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radiu
 }
 </script>
 <script>
-/* 부트 감시: CDN 로드 실패 시 안내 */
+/* 부트 감시: CDN 로드 실패 시 안내 (i18n 모듈 전에 도는 스크립트라 최소 사전을 씁니다) */
 (function(){
   window.__pickleBooted = false;
+  var MSG = {
+    ko: 'Three.js를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요. (첫 실행에만 네트워크가 필요합니다)',
+    en: 'Could not load Three.js. Check your connection and reload. (Network is needed only on the first run.)',
+    ja: 'Three.js を読み込めませんでした。接続を確認して再読み込みしてください。（初回のみネットワークが必要です）',
+    zh: '无法加载 Three.js。请检查网络连接后刷新。（仅首次运行需要网络）',
+    es: 'No se pudo cargar Three.js. Revisa tu conexión y recarga. (Solo hace falta red la primera vez.)'
+  };
   setTimeout(function(){
     if (window.__pickleBooted) return;
     var b = document.getElementById('boot');
     if (!b || b.classList.contains('gone')) return;
     b.classList.add('err');
-    b.querySelector('span').textContent =
-      'Three.js를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요. (첫 실행에만 네트워크가 필요합니다)';
+    var saved = null;
+    try { saved = localStorage.getItem('pickle-rhythm-lang'); } catch (e) {}
+    var base = String(saved || navigator.language || 'en').toLowerCase().slice(0, 2);
+    b.querySelector('span').textContent = MSG[base] || MSG.en;
   }, 9000);
 })();
 </script>
@@ -1386,6 +1561,342 @@ const AUDIO = {
   },
 };
 
+/* ============================== i18n ============================== */
+const LANGS = [
+  { code: 'ko', label: 'KO', html: 'ko' },
+  { code: 'en', label: 'EN', html: 'en' },
+  { code: 'ja', label: 'JA', html: 'ja' },
+  { code: 'zh', label: 'ZH', html: 'zh-Hans' },
+  { code: 'es', label: 'ES', html: 'es' },
+];
+
+const I18N = {
+  ko: {
+    docTitle: '피클 3D 리듬게임 · Pickle Rhythm',
+    brand: '피클',
+    sub: 'Pickle Rhythm · 네온 리듬 하이웨이',
+    lang: '언어',
+    songSelect: '곡 선택',
+    songHint: '↑ ↓ 이동 · Enter 시작',
+    diff: '난이도',
+    diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    vol: '볼륨',
+    speed: '스크롤',
+    speedSlow: '느리게', speedMid: '보통', speedFast: '빠르게',
+    sfx: '타격음',
+    offset: '판정 오프셋',
+    hintZero: '0ms · 기본 동기화 — 소리와 노트가 같은 순간에 도착해요',
+    hintPos: '+{ms}ms · 노트가 판정선을 {ms}ms 늦게 통과해요 (블루투스 이어폰처럼 소리가 늦을 때)',
+    hintNeg: '{ms}ms · 노트가 판정선을 {abs}ms 먼저 통과해요 (입력이 빠르게 느껴질 때)',
+    syncTest: '싱크 테스트',
+    syncStop: '테스트 중지',
+    syncStartAria: '싱크 테스트 켜기',
+    syncStopAria: '싱크 테스트 끄기',
+    syncTrackAria: '싱크 테스트 박자 트랙',
+    syncIdle: '박자에 맞춰 두드려 보세요',
+    syncTip: '트랙을 두드리거나 D F J K Space · 120 BPM',
+    syncApply: '평균 오프셋 적용',
+    syncApplyVal: '평균 적용 {v}',
+    perfect: 'PERFECT',
+    late: '{s}{m}ms 늦음',
+    early: '{s}{m}ms 빠름',
+    avg: '평균 {v} · {n}회',
+    ariaRestart: '다시 시작',
+    ariaPause: '일시정지',
+    start: 'START',
+    foot: 'D · F · J · K  |  모바일은 하단 4패드  |  Space 일시정지',
+    pauseTitle: '일시정지',
+    resume: '계속하기',
+    restart: '처음부터',
+    escHint: 'ESC 로도 계속할 수 있어요',
+    again: '다시 하기',
+    scoreLabel: 'SCORE',
+    accLabel: '정확도',
+    comboLabel: '최대 콤보',
+    notesLabel: '노트 수',
+    fullCombo: 'FULL COMBO',
+    hudScore: 'SCORE',
+    hudCombo: 'COMBO',
+    fever: 'FEVER',
+    feverTime: 'FEVER TIME',
+    boot: '피클을 깨우는 중…',
+    bootFail: '게임을 시작하지 못했어요: {msg}',
+  },
+  en: {
+    docTitle: 'Pickle Rhythm 3D · Pickle Rhythm',
+    brand: 'Pickle',
+    sub: 'Pickle Rhythm · Neon Rhythm Highway',
+    lang: 'Language',
+    songSelect: 'SONGS',
+    songHint: '↑ ↓ move · Enter start',
+    diff: 'DIFFICULTY',
+    diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    vol: 'VOLUME',
+    speed: 'SCROLL',
+    speedSlow: 'Slow', speedMid: 'Normal', speedFast: 'Fast',
+    sfx: 'HIT SFX',
+    offset: 'JUDGMENT OFFSET',
+    hintZero: '0ms · Default sync — sound and notes land together',
+    hintPos: '+{ms}ms · Notes cross the line {ms}ms later (fixes Bluetooth sound delay)',
+    hintNeg: '{ms}ms · Notes cross the line {abs}ms earlier (when input feels fast)',
+    syncTest: 'SYNC TEST',
+    syncStop: 'STOP TEST',
+    syncStartAria: 'Start sync test',
+    syncStopAria: 'Stop sync test',
+    syncTrackAria: 'Sync test beat track',
+    syncIdle: 'Tap along with the beat',
+    syncTip: 'Tap the track or press D F J K Space · 120 BPM',
+    syncApply: 'APPLY AVERAGE',
+    syncApplyVal: 'Apply {v}',
+    perfect: 'PERFECT',
+    late: '{s}{m}ms late',
+    early: '{s}{m}ms early',
+    avg: 'avg {v} · {n} taps',
+    ariaRestart: 'Restart',
+    ariaPause: 'Pause',
+    start: 'START',
+    foot: 'D · F · J · K  |  4 touch pads on mobile  |  Space to pause',
+    pauseTitle: 'PAUSED',
+    resume: 'RESUME',
+    restart: 'RESTART',
+    escHint: 'ESC also resumes',
+    again: 'PLAY AGAIN',
+    scoreLabel: 'SCORE',
+    accLabel: 'ACCURACY',
+    comboLabel: 'MAX COMBO',
+    notesLabel: 'NOTES',
+    fullCombo: 'FULL COMBO',
+    hudScore: 'SCORE',
+    hudCombo: 'COMBO',
+    fever: 'FEVER',
+    feverTime: 'FEVER TIME',
+    boot: 'Waking up Pickle…',
+    bootFail: 'Could not start the game: {msg}',
+  },
+  ja: {
+    docTitle: 'ピクル 3D リズムゲーム · Pickle Rhythm',
+    brand: 'ピクル',
+    sub: 'Pickle Rhythm · ネオン・リズム・ハイウェイ',
+    lang: '言語',
+    songSelect: '曲を選ぶ',
+    songHint: '↑ ↓ 移動 · Enter スタート',
+    diff: '難易度',
+    diffEasy: 'EASY', diffNormal: 'NORMAL', diffHard: 'HARD',
+    vol: '音量',
+    speed: 'スクロール',
+    speedSlow: '遅め', speedMid: '標準', speedFast: '速め',
+    sfx: 'ヒット音',
+    offset: '判定オフセット',
+    hintZero: '0ms · 標準同期 — 音とノートが同じ瞬間に届きます',
+    hintPos: '+{ms}ms · ノートが判定線を {ms}ms 遅く通過 (Bluetooth イヤホンの音遅れ補正)',
+    hintNeg: '{ms}ms · ノートが判定線を {abs}ms 早く通過 (入力が速く感じるとき)',
+    syncTest: 'シンクテスト',
+    syncStop: 'テスト停止',
+    syncStartAria: 'シンクテストを開始',
+    syncStopAria: 'シンクテストを停止',
+    syncTrackAria: 'シンクテストのビートトラック',
+    syncIdle: 'ビートに合わせて叩いてみてください',
+    syncTip: 'トラックを叩くか D F J K Space · 120 BPM',
+    syncApply: '平均オフセットを適用',
+    syncApplyVal: '平均を適用 {v}',
+    perfect: 'PERFECT',
+    late: '{s}{m}ms 遅れ',
+    early: '{s}{m}ms 早い',
+    avg: '平均 {v} · {n}回',
+    ariaRestart: 'やり直す',
+    ariaPause: '一時停止',
+    start: 'START',
+    foot: 'D · F · J · K  |  モバイルは下の4パッド  |  Space で一時停止',
+    pauseTitle: '一時停止',
+    resume: '再開する',
+    restart: '最初から',
+    escHint: 'ESC でも再開できます',
+    again: 'もう一度',
+    scoreLabel: 'SCORE',
+    accLabel: '精度',
+    comboLabel: '最大コンボ',
+    notesLabel: 'ノーツ数',
+    fullCombo: 'FULL COMBO',
+    hudScore: 'SCORE',
+    hudCombo: 'COMBO',
+    fever: 'FEVER',
+    feverTime: 'FEVER TIME',
+    boot: 'ピクルを起こしています…',
+    bootFail: 'ゲームを開始できませんでした: {msg}',
+  },
+  zh: {
+    docTitle: '皮克尔 3D 节奏游戏 · Pickle Rhythm',
+    brand: '皮克尔',
+    sub: 'Pickle Rhythm · 霓虹节奏高速',
+    lang: '语言',
+    songSelect: '选择歌曲',
+    songHint: '↑ ↓ 选择 · Enter 开始',
+    diff: '难度',
+    diffEasy: '简单', diffNormal: '普通', diffHard: '困难',
+    vol: '音量',
+    speed: '滚动速度',
+    speedSlow: '慢', speedMid: '标准', speedFast: '快',
+    sfx: '打击音',
+    offset: '判定偏移',
+    hintZero: '0ms · 默认同步 — 声音与音符同时到达',
+    hintPos: '+{ms}ms · 音符晚 {ms}ms 通过判定线（补偿蓝牙耳机声音延迟）',
+    hintNeg: '{ms}ms · 音符早 {abs}ms 通过判定线（输入偏快时）',
+    syncTest: '同步测试',
+    syncStop: '停止测试',
+    syncStartAria: '开始同步测试',
+    syncStopAria: '停止同步测试',
+    syncTrackAria: '同步测试节拍轨道',
+    syncIdle: '跟着节拍敲一敲',
+    syncTip: '敲击轨道或按 D F J K Space · 120 BPM',
+    syncApply: '应用平均偏移',
+    syncApplyVal: '应用 {v}',
+    perfect: 'PERFECT',
+    late: '{s}{m}ms 偏慢',
+    early: '{s}{m}ms 偏快',
+    avg: '平均 {v} · {n} 次',
+    ariaRestart: '重新开始',
+    ariaPause: '暂停',
+    start: 'START',
+    foot: 'D · F · J · K  |  手机用下方 4 个按键  |  Space 暂停',
+    pauseTitle: '已暂停',
+    resume: '继续',
+    restart: '重新开始',
+    escHint: '也可以按 ESC 继续',
+    again: '再来一次',
+    scoreLabel: '分数',
+    accLabel: '准确率',
+    comboLabel: '最大连击',
+    notesLabel: '音符数',
+    fullCombo: 'FULL COMBO',
+    hudScore: 'SCORE',
+    hudCombo: 'COMBO',
+    fever: 'FEVER',
+    feverTime: 'FEVER TIME',
+    boot: '正在唤醒皮克尔…',
+    bootFail: '无法开始游戏: {msg}',
+  },
+  es: {
+    docTitle: 'Pickle Rhythm 3D · Pickle Rhythm',
+    brand: 'Pickle',
+    sub: 'Pickle Rhythm · Autopista de ritmo neón',
+    lang: 'Idioma',
+    songSelect: 'CANCIÓN',
+    songHint: '↑ ↓ mover · Enter empezar',
+    diff: 'DIFICULTAD',
+    diffEasy: 'FÁCIL', diffNormal: 'NORMAL', diffHard: 'DIFÍCIL',
+    vol: 'VOLUMEN',
+    speed: 'VELOCIDAD',
+    speedSlow: 'Lenta', speedMid: 'Normal', speedFast: 'Rápida',
+    sfx: 'SONIDO GOLPE',
+    offset: 'DESFASE DE JUICIO',
+    hintZero: '0ms · Sincronía por defecto — sonido y notas llegan juntos',
+    hintPos: '+{ms}ms · Las notas pasan {ms}ms más tarde (compensa el retraso Bluetooth)',
+    hintNeg: '{ms}ms · Las notas pasan {abs}ms antes (cuando tu input es rápido)',
+    syncTest: 'TEST DE SINCRONÍA',
+    syncStop: 'PARAR TEST',
+    syncStartAria: 'Iniciar test de sincronía',
+    syncStopAria: 'Parar test de sincronía',
+    syncTrackAria: 'Pista de pulso del test',
+    syncIdle: 'Toca siguiendo el pulso',
+    syncTip: 'Toca la pista o pulsa D F J K Space · 120 BPM',
+    syncApply: 'APLICAR MEDIA',
+    syncApplyVal: 'Aplicar {v}',
+    perfect: 'PERFECT',
+    late: '{s}{m}ms tarde',
+    early: '{s}{m}ms pronto',
+    avg: 'media {v} · {n} toques',
+    ariaRestart: 'Reiniciar',
+    ariaPause: 'Pausa',
+    start: 'START',
+    foot: 'D · F · J · K  |  4 pads en móvil  |  Space pausa',
+    pauseTitle: 'EN PAUSA',
+    resume: 'CONTINUAR',
+    restart: 'REINICIAR',
+    escHint: 'ESC también continúa',
+    again: 'JUGAR OTRA VEZ',
+    scoreLabel: 'PUNTOS',
+    accLabel: 'PRECISIÓN',
+    comboLabel: 'COMBO MÁX',
+    notesLabel: 'NOTAS',
+    fullCombo: 'FULL COMBO',
+    hudScore: 'SCORE',
+    hudCombo: 'COMBO',
+    fever: 'FEVER',
+    feverTime: 'FEVER TIME',
+    boot: 'Despertando a Pickle…',
+    bootFail: 'No se pudo iniciar el juego: {msg}',
+  },
+};
+
+/* 곡 이름 · 장르 설명 (5개 언어) */
+const SONG_I18N = {
+  dawn: { ko: '라일락 새벽', en: 'Lilac Dawn', ja: 'ライラックの夜明け', zh: '紫丁香黎明', es: 'Amanecer de Lila' },
+  circuit: { ko: '피클 서킷', en: 'Pickle Circuit', ja: 'ピクル・サーキット', zh: '皮克尔赛道', es: 'Circuito Pickle' },
+  rush: { ko: '사워 러시', en: 'Sour Rush', ja: 'サワー・ラッシュ', zh: '酸爽冲刺', es: 'Carrera Ácida' },
+};
+const SONG_TAG_I18N = {
+  dawn: {
+    ko: '몽환 신스팝 · F major', en: 'Dreamy synthpop · F major', ja: '夢幻シンセポップ · F major',
+    zh: '梦幻合成流行 · F major', es: 'Synthpop onírico · Fa mayor',
+  },
+  circuit: {
+    ko: '에너제틱 하우스 · E minor', en: 'Energetic house · E minor', ja: 'エナジェティック・ハウス · E minor',
+    zh: '活力浩室 · E minor', es: 'House enérgico · Mi menor',
+  },
+  rush: {
+    ko: '하드코어 신스 · D minor', en: 'Hardcore synth · D minor', ja: 'ハードコア・シンセ · D minor',
+    zh: '硬核合成器 · D minor', es: 'Synth hardcore · Re menor',
+  },
+};
+
+const LANG = {
+  cur: 'ko',
+  detect() {
+    let nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+    nav = String(nav).toLowerCase();
+    const base = nav.split('-')[0];
+    if (base === 'zh') return 'zh';
+    return I18N[base] ? base : 'en';
+  },
+  load() {
+    let saved = null;
+    try { saved = localStorage.getItem('pickle-rhythm-lang'); } catch (e) { /* file:// 등 */ }
+    if (saved && I18N[saved]) this.cur = saved;
+    else this.cur = this.detect();
+    return this.cur;
+  },
+  save(code) {
+    try { localStorage.setItem('pickle-rhythm-lang', code); } catch (e) { /* ignore */ }
+  },
+  htmlTag(code) {
+    const l = LANGS.filter((x) => x.code === code)[0];
+    return l ? l.html : 'en';
+  },
+};
+
+function t(key, vars) {
+  const pack = I18N[LANG.cur] || I18N.en;
+  let s = pack[key];
+  if (s == null) s = I18N.en[key];
+  if (s == null) return key;
+  if (vars) {
+    s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m));
+  }
+  return s;
+}
+
+function songTitleOf(song) {
+  const m = SONG_I18N[song.id];
+  return (m && m[LANG.cur]) || (m && m.en) || song.en || song.ko;
+}
+function songTagOf(song) {
+  const m = SONG_TAG_I18N[song.id];
+  return (m && m[LANG.cur]) || (m && m.en) || song.tag || '';
+}
+function diffName(d) {
+  return t(['diffEasy', 'diffNormal', 'diffHard'][clamp(d, 0, 2)]);
+}
+
 /* ============================ 3D SCENE ============================ */
 const LANE_X = [-3.45, -1.15, 1.15, 3.45];
 const LANE_W = 2.3;
@@ -2102,12 +2613,353 @@ const MUSIC = {
   },
 };
 
+/* --------------------- sync test (offset live preview) --------------------- */
+const SYNC = {
+  running: false,
+  bpm: 120,
+  beatDur: 0.5,
+  travel: 0.28,
+  zoneX: 0.58,
+  startAudio: 0,
+  nextBeat: 0,
+  beatIndex: 0,
+  timer: null,
+  token: 0,
+  taps: [],
+  lastTapMs: null,
+  track: null,
+  noteEl: null,
+  ghostEl: null,
+  deltaEl: null,
+  applyBtn: null,
+  view: null,
+  btn: null,
+  btnText: null,
+  card: null,
+
+  initEls() {
+    this.track = $('#syncTrack');
+    this.noteEl = $('#syncNote');
+    this.ghostEl = $('#syncGhost');
+    this.deltaEl = $('#syncDelta');
+    this.applyBtn = $('#syncApply');
+    this.view = $('#syncView');
+    this.btn = $('#syncToggle');
+    this.btnText = $('#syncToggleText');
+    this.card = $('#offsetCard');
+    if (this.track) {
+      this.track.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (this.running) this.tap();
+        else this.start();
+      });
+    }
+    if (this.applyBtn) this.applyBtn.addEventListener('click', () => this.applyAverage());
+    if (this.btn) {
+      this.btn.addEventListener('click', () => {
+        if (this.running) this.stop();
+        else this.start();
+      });
+    }
+  },
+
+  latency() {
+    const ctx = AUDIO.ctx;
+    if (!ctx) return 0;
+    let lat = 0;
+    if (typeof ctx.outputLatency === 'number' && ctx.outputLatency > 0) lat = ctx.outputLatency;
+    else if (typeof ctx.baseLatency === 'number' && ctx.baseLatency > 0) lat = ctx.baseLatency;
+    return clamp(lat, 0, 0.35);
+  },
+
+  async start() {
+    if (this.running || G.screen !== 'title') return;
+    const token = (this.token = (this.token || 0) + 1);
+    AUDIO.init();
+    const ctx = AUDIO.ctx;
+    if (!ctx) return;
+    try { await ctx.resume(); } catch (e) {}
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
+    if (token !== this.token || G.screen !== 'title') return;
+    AUDIO.setVolume(AUDIO.vol);
+    this.running = true;
+    this.taps = [];
+    this.lastTapMs = null;
+    this.beatIndex = 0;
+    this.startAudio = ctx.currentTime + 0.45;
+    this.nextBeat = this.startAudio;
+    if (this.timer) clearInterval(this.timer);
+    this.timer = setInterval(() => this.schedule(), 25);
+    this.schedule();
+    this.syncUI();
+  },
+
+  schedule() {
+    const ctx = AUDIO.ctx;
+    if (!ctx || !this.running) return;
+    const horizon = ctx.currentTime + 0.25;
+    let guard = 0;
+    while (this.nextBeat < horizon && guard++ < 32) {
+      this.tickSound(this.nextBeat, this.beatIndex % 4 === 0);
+      this.beatIndex++;
+      this.nextBeat += this.beatDur;
+    }
+  },
+
+  tickSound(when, accent) {
+    const ctx = AUDIO.ctx;
+    if (!ctx) return;
+    const o = ctx.createOscillator();
+    o.type = accent ? 'triangle' : 'sine';
+    o.frequency.setValueAtTime(accent ? 1568 : 1046.5, when);
+    const g = ctx.createGain();
+    const peak = accent ? 0.20 : 0.11;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(peak, when + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + (accent ? 0.09 : 0.06));
+    o.connect(g);
+    g.connect(AUDIO.sfxBus || AUDIO.master || ctx.destination);
+    o.start(when);
+    o.stop(when + 0.12);
+  },
+
+  tap() {
+    if (!this.running || !AUDIO.ctx) return false;
+    const ctx = AUDIO.ctx;
+    const now = ctx.currentTime - this.latency();
+    const k = Math.round((now - this.startAudio) / this.beatDur);
+    if (k < 0) return true;
+    const beat = this.startAudio + k * this.beatDur;
+    this.recordTap((now - beat) * 1000);
+    return true;
+  },
+
+  recordTap(raw) {
+    /* 보정 가능한 범위(±120ms)를 크게 벗어난 탭은 평균에서 제외 */
+    if (Math.abs(raw) > 140) return;
+    this.taps.push(raw);
+    if (this.taps.length > 24) this.taps.shift();
+    this.lastTapMs = raw;
+    this.renderDelta();
+  },
+
+  renderDelta() {
+    const el = this.deltaEl;
+    if (!el) return;
+    if (!this.taps.length) {
+      el.className = 'sync-delta';
+      el.textContent = t('syncIdle');
+      if (this.applyBtn) { this.applyBtn.disabled = true; this.applyBtn.textContent = t('syncApply'); }
+      return;
+    }
+    const off = G.offsetMs;
+    const n = this.taps.length;
+    let sum = 0;
+    for (const v of this.taps) sum += v;
+    const avgRaw = sum / n;
+    const avgJ = avgRaw - off;
+    const last = this.taps[n - 1] - off;
+    const near = Math.abs(last) <= 12;
+    const cls = near ? 'perfect' : last > 0 ? 'late' : 'early';
+    const txt = near
+      ? t('perfect')
+      : t(last > 0 ? 'late' : 'early', { s: last > 0 ? '+' : '-', m: Math.abs(Math.round(last)) });
+    el.textContent = '';
+    const sp = document.createElement('span');
+    sp.className = cls;
+    sp.textContent = txt;
+    el.appendChild(sp);
+    if (n >= 3) {
+      const am = Math.abs(Math.round(avgJ));
+      const asg = avgJ > 0 ? '+' : avgJ < 0 ? '-' : '';
+      const em = document.createElement('em');
+      em.textContent = t('avg', { v: asg + am + 'ms', n });
+      el.appendChild(em);
+    }
+    if (this.applyBtn) {
+      const rec = clamp(Math.round(avgRaw / 5) * 5, -120, 120) || 0;
+      this.applyBtn.disabled = n < 3;
+      this.applyBtn.textContent = n >= 3
+        ? t('syncApplyVal', { v: (rec > 0 ? '+' : '') + rec + 'ms' })
+        : t('syncApply');
+    }
+  },
+
+  applyAverage() {
+    if (!this.running || this.taps.length < 3) return;
+    let sum = 0;
+    for (const v of this.taps) sum += v;
+    const rec = clamp(Math.round(sum / this.taps.length / 5) * 5, -120, 120) || 0;
+    setOffset(rec, { flash: true });
+    this.taps = [];
+    this.lastTapMs = null;
+    this.renderDelta();
+    if (AUDIO.ctx) AUDIO.uiClick();
+  },
+
+  stop() {
+    const was = this.running;
+    this.token = (this.token || 0) + 1;
+    this.running = false;
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    this.taps = [];
+    this.lastTapMs = null;
+    if (this.track) this.track.classList.remove('hot');
+    this.syncUI();
+    if (was) this.renderDelta();
+  },
+
+  syncUI() {
+    const on = this.running;
+    if (this.btn) {
+      this.btn.classList.toggle('on', on);
+      this.btn.setAttribute('aria-pressed', String(on));
+      this.btn.setAttribute('aria-label', t(on ? 'syncStopAria' : 'syncStartAria'));
+    }
+    if (this.btnText) this.btnText.textContent = t(on ? 'syncStop' : 'syncTest');
+    if (this.view) this.view.classList.toggle('on', on);
+    if (this.card) this.card.classList.toggle('live', on);
+    if (this.track) this.track.classList.toggle('idle', !on);
+    if (!on) {
+      if (this.noteEl) this.noteEl.classList.remove('on');
+      if (this.ghostEl) this.ghostEl.classList.remove('on');
+      this.renderDelta();
+    }
+  },
+};
+
+/* 오프셋 값 표시 · 설명 줄 */
+function renderOffsetHint(flash) {
+  const el = $('#offsetHint');
+  const val = $('#offsetVal');
+  const ms = G.offsetMs;
+  if (val) {
+    val.textContent = (ms > 0 ? '+' : '') + ms + 'ms';
+    val.className = ms > 0 ? 'pos' : ms < 0 ? 'neg' : '';
+  }
+  if (!el) return;
+  let txt = t('hintZero');
+  let cls = '';
+  if (ms > 0) { txt = t('hintPos', { ms }); cls = 'pos'; }
+  else if (ms < 0) { txt = t('hintNeg', { ms, abs: -ms }); cls = 'neg'; }
+  el.textContent = txt;
+  el.className = 'oc-hint' + (cls ? ' ' + cls : '');
+  if (flash) {
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function setOffset(ms, opts) {
+  const v = clamp(Math.round(ms / 5) * 5, -120, 120) || 0;
+  G.offsetMs = v;
+  const range = $('#offsetRange');
+  if (range) range.value = v;
+  renderOffsetHint(!!(opts && opts.flash));
+  savePrefs();
+  if (SYNC.running) SYNC.renderDelta();
+}
+
+/* 싱크 테스트: 매 프레임 노트 위치 갱신 (오프셋을 끌면 바로 이동) */
+function syncCyclePos(secOff, k) {
+  const ctx = AUDIO.ctx;
+  if (!ctx) return 0;
+  const cross = SYNC.startAudio + secOff + k * SYNC.beatDur;
+  return SYNC.zoneX * (1 + (ctx.currentTime - cross) / SYNC.travel);
+}
+
+function updateSyncVisual() {
+  const track = SYNC.track;
+  const noteEl = SYNC.noteEl;
+  if (!track || !noteEl) return;
+  const ghostEl = SYNC.ghostEl;
+
+  if (!SYNC.running || !AUDIO.ctx) {
+    /* 정지 상태: 오프셋만큼 판정선에서 벗어난 위치에 노트를 세워 미리 보여 준다 */
+    const p = clamp(SYNC.zoneX - (G.offsetMs / 1000) * (SYNC.zoneX / SYNC.travel), 0.035, 0.965);
+    noteEl.classList.add('on');
+    noteEl.style.left = (p * 100).toFixed(2) + '%';
+    if (ghostEl) ghostEl.classList.remove('on');
+    return;
+  }
+
+  const ctx = AUDIO.ctx;
+  const tNow = ctx.currentTime;
+  const off = G.offsetMs / 1000;
+  const baseK = Math.floor((tNow - off - SYNC.startAudio) / SYNC.beatDur);
+  let k = null;
+  let p = 0;
+  for (let i = 0; i < 2; i++) {
+    const cand = baseK + 1 - i;
+    const pf = syncCyclePos(off, cand);
+    if (pf >= -0.05 && pf <= 1.06) { k = cand; p = pf; break; }
+  }
+  if (k === null) {
+    noteEl.classList.remove('on');
+    if (ghostEl) ghostEl.classList.remove('on');
+    track.classList.remove('hot');
+    return;
+  }
+  noteEl.classList.add('on');
+  noteEl.style.left = (clamp(p, -0.05, 1.06) * 100).toFixed(2) + '%';
+  if (ghostEl) {
+    if (G.offsetMs !== 0) {
+      const pg = syncCyclePos(0, k);
+      if (pg >= -0.05 && pg <= 1.06) {
+        ghostEl.classList.add('on');
+        ghostEl.style.left = (pg * 100).toFixed(2) + '%';
+      } else ghostEl.classList.remove('on');
+    } else ghostEl.classList.remove('on');
+  }
+  const dCross = Math.abs(tNow - (SYNC.startAudio + off + k * SYNC.beatDur));
+  track.classList.toggle('hot', dCross < 0.03);
+}
+
+/* ---------------------------- language ---------------------------- */
+function applyLang(code, opts) {
+  const lang = I18N[code] ? code : 'en';
+  LANG.cur = lang;
+  document.documentElement.lang = LANG.htmlTag(lang);
+  document.title = t('docTitle');
+  $$('[data-i18n]').forEach((el) => {
+    const s = t(el.dataset.i18n);
+    if (s != null) el.textContent = s;
+  });
+  $$('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  $$('#langPills button').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+  buildSongList();
+  renderOffsetHint(false);
+  SYNC.syncUI();
+  const fw = $('#feverWord');
+  if (fw) fw.textContent = t(G.fever ? 'feverTime' : 'fever');
+  if (G.screen === 'play' || G.screen === 'pause' || G.screen === 'result') {
+    const song = SONGS[G.songIndex];
+    const hd = $('#hudDiff');
+    const ht = $('#hudTitle');
+    if (hd) hd.textContent = diffName(G.diff);
+    if (ht) ht.textContent = songTitleOf(song);
+    if (G.screen === 'pause') {
+      const pi = $('#pauseInfo');
+      if (pi) pi.textContent = songTitleOf(song) + ' · ' + diffName(G.diff);
+    }
+    if (G.screen === 'result') {
+      const rs = $('#resultSong');
+      if (rs) rs.textContent = songTitleOf(song) + ' · ' + diffName(G.diff);
+    }
+  }
+  LANG.save(lang);
+  if (AUDIO.ctx && (!opts || !opts.silent)) AUDIO.uiClick();
+}
+
 /* ---------------------------- boot ---------------------------- */
 function boot() {
   initGraphics();
+  LANG.load();
   buildSongList();
   bindUI();
   loadPrefs();
+  applyLang(LANG.cur, { silent: true });
   window.__pickleBooted = true;
   const b = $('#boot');
   b.classList.add('gone');
@@ -2128,7 +2980,7 @@ function buildSongList() {
     btn.style.setProperty('--sc-glow', s.glow);
     btn.innerHTML =
       '<span class="chip"></span>' +
-      '<span class="meta"><b>' + s.ko + '</b><span>' + s.tag + '</span></span>' +
+      '<span class="meta"><b>' + songTitleOf(s) + '</b><span>' + songTagOf(s) + '</span></span>' +
       '<span class="bpm"><i>BPM</i>' + s.bpm + '</span>';
     btn.addEventListener('click', () => {
       if (AUDIO.ctx) AUDIO.uiClick();
@@ -2181,16 +3033,13 @@ function loadPrefs() {
     $('#sfxToggle').classList.toggle('on', p.sfx);
     $('#sfxToggle').setAttribute('aria-checked', String(p.sfx));
   }
-  if (typeof p.off === 'number') {
-    G.offsetMs = clamp(p.off, -120, 120);
-    $('#offsetRange').value = G.offsetMs;
-    $('#offsetVal').textContent = G.offsetMs + 'ms';
-  }
+  if (typeof p.off === 'number') setOffset(p.off);
 }
 
 /* ---------------------------- flow ---------------------------- */
 async function startGame() {
   const song = SONGS[G.songIndex];
+  SYNC.stop();
   MUSIC.stop();
   if (AUDIO.ctx) { try { AUDIO.stopAll(); } catch (e) {} }
 
@@ -2236,8 +3085,8 @@ async function startGame() {
   G.startTime = (ctx ? ctx.currentTime : 0) + pre;
   if (ctx) MUSIC.start(song, G.startTime);
 
-  $('#hudTitle').textContent = song.ko;
-  $('#hudDiff').textContent = ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#hudTitle').textContent = songTitleOf(song);
+  $('#hudDiff').textContent = diffName(G.diff);
   $('#scoreVal').textContent = '0';
   $('#comboVal').textContent = '0';
   $('#comboBox').classList.remove('on');
@@ -2264,7 +3113,7 @@ function pauseGame() {
   if (AUDIO.ctx) { try { AUDIO.ctx.suspend(); } catch (e) {} }
   G.screen = 'pause';
   $('#app').dataset.screen = 'pause';
-  $('#pauseInfo').textContent = SONGS[G.songIndex].ko + ' · ' + ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#pauseInfo').textContent = songTitleOf(SONGS[G.songIndex]) + ' · ' + diffName(G.diff);
   $('#pauseScreen').classList.remove('hidden');
 }
 
@@ -2287,6 +3136,7 @@ async function resumeGame() {
 }
 
 function quitToMenu() {
+  SYNC.stop();
   MUSIC.stop();
   if (AUDIO.ctx) {
     try { AUDIO.ctx.resume(); } catch (e) {}
@@ -2317,7 +3167,7 @@ function finishSong() {
   const rank = acc >= 97 ? 'S' : acc >= 92 ? 'A' : acc >= 85 ? 'B' : 'C';
   $('#rankLetter').textContent = rank;
   $('#rankRing').style.setProperty('--p', clamp(acc, 2, 100).toFixed(1) + '%');
-  $('#resultSong').textContent = song.ko + ' · ' + ['EASY', 'NORMAL', 'HARD'][G.diff];
+  $('#resultSong').textContent = songTitleOf(song) + ' · ' + diffName(G.diff);
   $('#resultScore').textContent = Math.round(G.score).toLocaleString('en-US');
   $('#rAcc').textContent = acc.toFixed(2) + '%';
   $('#rCombo').textContent = G.maxCombo;
@@ -2514,6 +3364,7 @@ function update(dt, wall) {
   updateStage(dt, wall, pulse, bp);
   updateNotesVisual(G.screen === 'play' || G.screen === 'pause' ? G.time : -99);
   updateFx(dt);
+  updateSyncVisual();
 }
 
 /* ---------------------------- HUD ---------------------------- */
@@ -2556,7 +3407,7 @@ function updateHUD(dt) {
   }
   if (G.fever !== hudCache.feverOn) {
     hudCache.feverOn = G.fever;
-    $('#feverWord').textContent = G.fever ? 'FEVER TIME' : 'FEVER';
+    $('#feverWord').textContent = t(G.fever ? 'feverTime' : 'fever');
   }
 }
 
@@ -2750,10 +3601,16 @@ function bindUI() {
     savePrefs();
   });
   $('#offsetRange').addEventListener('input', (e) => {
-    G.offsetMs = +e.target.value;
-    $('#offsetVal').textContent = G.offsetMs + 'ms';
-    savePrefs();
+    setOffset(+e.target.value, { flash: true });
   });
+  /* 언어 선택 */
+  $$('#langPills button').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.lang === LANG.cur) return;
+    applyLang(b.dataset.lang);
+  }));
+  /* 싱크 테스트 위젯 */
+  SYNC.initEls();
+  SYNC.syncUI();
   $('#sfxToggle').addEventListener('click', (e) => {
     AUDIO.sfxOn = !AUDIO.sfxOn;
     e.currentTarget.classList.toggle('on', AUDIO.sfxOn);
@@ -2812,6 +3669,13 @@ function bindUI() {
       if (k === ' ' || k === 'escape') { e.preventDefault(); resumeGame(); return; }
       if (k === 'r') { e.preventDefault(); resumeCtxThen(startGame); return; }
     } else if (G.screen === 'title') {
+      const tapKey = k === 'd' || k === 'f' || k === 'j' || k === 'k' || k === ' ';
+      if (SYNC.running && (tapKey || k === 'escape')) {
+        e.preventDefault();
+        if (k === 'escape') SYNC.stop();
+        else SYNC.tap();
+        return;
+      }
       if (k === 'arrowup' || k === 'w') { e.preventDefault(); selectSong(G.songIndex - 1); return; }
       if (k === 'arrowdown' || k === 's') { e.preventDefault(); selectSong(G.songIndex + 1); return; }
       if (k === 'arrowleft' || k === 'a') { e.preventDefault(); selectDiff(G.diff - 1); return; }
@@ -2834,7 +3698,10 @@ function bindUI() {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && G.screen === 'play') pauseGame();
+    if (document.hidden) {
+      SYNC.stop();
+      if (G.screen === 'play') pauseGame();
+    }
   });
 
   window.addEventListener('contextmenu', (e) => {
@@ -2856,6 +3723,27 @@ window.PICKLE = {
   resume: resumeGame,
   menu: quitToMenu,
   setAuto: (v) => { G.auto = !!v; },
+  setOffset: (ms) => { setOffset(ms); return G.offsetMs; },
+  lang: (c) => { applyLang(c); return LANG.cur; },
+  langs: () => LANGS.map((l) => l.code),
+  sync: {
+    start: () => SYNC.start(),
+    stop: () => SYNC.stop(),
+    tap: () => SYNC.tap(),
+    tapAt: (ms) => { if (!SYNC.running) return false; SYNC.recordTap(ms); return true; },
+    state: () => ({
+      running: SYNC.running,
+      taps: SYNC.taps.slice(),
+      last: SYNC.lastTapMs,
+      offsetMs: G.offsetMs,
+      beatDur: SYNC.beatDur,
+      startAudio: +SYNC.startAudio.toFixed(3),
+      timer: !!SYNC.timer,
+      outLat: +SYNC.latency().toFixed(4),
+      deltaText: SYNC.deltaEl ? SYNC.deltaEl.textContent : '',
+      applyDisabled: SYNC.applyBtn ? SYNC.applyBtn.disabled : null,
+    }),
+  },
   chart: () => buildChart(SONGS[G.songIndex], G.diff).length,
   snapshot: () => ({
     screen: G.screen,
@@ -2875,6 +3763,8 @@ window.PICKLE = {
     audioState: AUDIO.ctx ? AUDIO.ctx.state : 'none',
     audioTime: AUDIO.ctx ? +AUDIO.ctx.currentTime.toFixed(3) : 0,
     fps: lastFps,
+    lang: LANG.cur,
+    offsetMs: G.offsetMs,
   }),
 };
 let lastFps = 0;
@@ -2892,7 +3782,7 @@ requestAnimationFrame(() => {
     const b = $('#boot');
     if (b) {
       b.classList.add('err');
-      b.querySelector('span').textContent = '게임을 시작하지 못했어요: ' + err.message;
+      b.querySelector('span').textContent = t('bootFail', { msg: err.message });
     }
     console.error(err);
   }
