@@ -123,6 +123,8 @@ input{font-family:inherit}
 .combo-box small{font-size:8.5px;letter-spacing:.42em;color:var(--lilac);margin-top:4px;font-weight:700}
 .combo-box.pop span{animation:comboPop .22s cubic-bezier(.2,1.6,.5,1)}
 @keyframes comboPop{0%{transform:scale(1.28)}100%{transform:scale(1)}}
+.combo-box.pop2 span{animation:comboPop2 .22s cubic-bezier(.2,1.6,.5,1)}
+@keyframes comboPop2{0%{transform:scale(1.28)}100%{transform:scale(1)}}
 
 .judge-layer{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .judge{
@@ -2282,6 +2284,9 @@ const LANE_HEX = [0xc6a3ff, 0x78e9ff, 0x8dffd6, 0xffaad8];
 const NOTE_HEX = [0xb992ff, 0x3fd8ff, 0x4dffbc, 0xff86d2];
 
 let renderer, scene, camera, composer, bloomPass;
+/* 품질 가드: 프레임 시간이 길어지면 내부 렌더 해상도를 한 단계씩 낮춘다 (시각 변화 최소) */
+const BLOOM_SCALE = 0.5;               /* 블룸 내부 렌더 해상도 배율 (화면 대비) */
+const QUAL = { auto: true, base: 1, pr: 1, acc: 0, n: 0, avg: 16.7, slow: 0, steps: 0, cool: 0 };
 const SC = {
   notePools: [],
   rings: [],
@@ -2316,6 +2321,7 @@ const GLOW_TEX = makeGlowTex();
 const SUNSET = {
   canvas: null, ctx: null, tex: null, img: null, w: 0, h: 0,
   sil: null, cm: null, acc: 0, last: -1,
+  silKey: -1, base: null, baseKey: '',
 };
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const SKY_STOPS = [
@@ -2371,6 +2377,8 @@ function resizeSunset() {
   SUNSET.tex = tex;
   if (SC.skyMat) SC.skyMat.uniforms.uSunset.value = tex;
   SUNSET.last = -1;
+  SUNSET.silKey = -1;
+  SUNSET.base = null;
 }
 
 const CLOUD_BANDS = [
@@ -2381,6 +2389,38 @@ const CLOUD_BANDS = [
 ];
 
 /* time: 초 단위 애니메이션, sunH: 지평선 위 태양 높이(하늘 띠 대비 0~1) */
+const SUN_TMP = [0, 0, 0];
+
+/* 아래 모래·바닥 띠는 시간에 따라 변하지 않는다 → 한 번만 그려 두고 복사한다 */
+function buildSunsetBase(w, h, shore) {
+  const n = Math.max(0, (h - shore) * w * 4);
+  const d = new Uint8ClampedArray(n);
+  for (let y = shore; y < h; y++) {
+    const rowBase = (y - shore) * w;
+    const v = (y - shore) / Math.max(1, h - shore);
+    const edge = (y - shore) < 2;
+    for (let x = 0; x < w; x++) {
+      const i4 = (rowBase + x) * 4;
+      const bay = BAYER4[((y & 3) << 2) | (x & 3)] / 16 - 0.5;
+      let r = 238 - 52 * v;
+      let g = 190 - 50 * v;
+      let b = 132 - 44 * v;
+      if (edge) { r = 255; g = 232; b = 198; }
+      const grit = (((x * 13 + y * 7) ^ (x * y)) % 17) < 2 ? -26 : 0;
+      r += grit; g += grit; b += grit;
+      r = Math.round((r + bay * 16) / 16) * 16;
+      g = Math.round((g + bay * 16) / 16) * 16;
+      b = Math.round((b + bay * 16) / 16) * 16;
+      d[i4] = r < 0 ? 0 : r > 255 ? 255 : r;
+      d[i4 + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      d[i4 + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      d[i4 + 3] = 255;
+    }
+  }
+  SUNSET.base = d;
+  SUNSET.baseKey = w + 'x' + h + '@' + shore;
+}
+
 function drawSunset(time, sunH) {
   const ctx = SUNSET.ctx;
   if (!ctx) return;
@@ -2393,43 +2433,48 @@ function drawSunset(time, sunH) {
   const sunR = Math.max(4, Math.round(skyH * 0.132));
   const sunCY = Math.round(horizon - clamp(sunH, 0, 0.95) * skyH);
   const t = time;
-  const tmp = [0, 0, 0];
+  const tmp = SUN_TMP;
 
-  /* 실루엣 마스크: 언덕 + 야자수 */
-  const sil = (SUNSET.sil && SUNSET.sil.length === w * h) ? SUNSET.sil : (SUNSET.sil = new Uint8Array(w * h));
-  sil.fill(0);
-  for (let x = 0; x < w; x++) {
-    const u = x / w;
-    let top = 1e9;
-    const l = 1 - Math.abs(u - 0.13) / 0.23;
-    if (l > 0) top = Math.min(top, horizon - Math.round(Math.pow(l, 0.75) * skyH * 0.30));
-    const r2 = 1 - Math.abs(u - 0.885) / 0.085;
-    if (r2 > 0) top = Math.min(top, horizon - Math.round(Math.pow(r2, 1.1) * skyH * 0.11));
-    if (top < 1e9) for (let y = Math.max(0, top); y < horizon; y++) sil[y * w + x] = 1;
-  }
-  /* 야자수: 오른쪽 끝, 살짝 기울어진 줄기 + 잎 */
-  const px0 = Math.round(w * 0.932);
-  const crownY = Math.max(2, horizon - Math.round(skyH * 0.62));
-  for (let y = crownY; y < horizon; y++) {
-    const tx = px0 + Math.round((y - crownY) * 0.12);
-    if (tx >= 0 && tx < w) sil[y * w + tx] = 1;
-    if (tx + 1 < w) sil[y * w + tx + 1] = 1;
-  }
-  for (let f = 0; f < 6; f++) {
-    const a = -Math.PI + ((f + 0.5) / 6) * Math.PI;
-    const len = skyH * (0.34 + 0.09 * ((f * 37) % 3));
-    for (let k = 0; k < len; k++) {
-      const fx = px0 + Math.cos(a) * k;
-      const fy = crownY + Math.sin(a) * k * 0.62 + k * k * 0.011;
-      const ix = Math.round(fx), iy = Math.round(fy);
-      if (ix >= 0 && ix < w && iy >= 0 && iy < horizon) {
-        sil[iy * w + ix] = 1;
-        if (k > len * 0.66 && ix + 1 < w) sil[iy * w + ix + 1] = 1;
+  /* 실루엣 마스크: 언덕 + 야자수 — 지평선 위치가 바뀔 때만 다시 계산 */
+  const silKey = (w * 4096 + h) * 4096 + horizon;
+  if (!SUNSET.sil || SUNSET.sil.length !== w * h) { SUNSET.sil = new Uint8Array(w * h); SUNSET.silKey = -1; }
+  const sil = SUNSET.sil;
+  if (SUNSET.silKey !== silKey) {
+    SUNSET.silKey = silKey;
+    sil.fill(0);
+    for (let x = 0; x < w; x++) {
+      const u = x / w;
+      let top = 1e9;
+      const l = 1 - Math.abs(u - 0.13) / 0.23;
+      if (l > 0) top = Math.min(top, horizon - Math.round(Math.pow(l, 0.75) * skyH * 0.30));
+      const r2 = 1 - Math.abs(u - 0.885) / 0.085;
+      if (r2 > 0) top = Math.min(top, horizon - Math.round(Math.pow(r2, 1.1) * skyH * 0.11));
+      if (top < 1e9) for (let y = Math.max(0, top); y < horizon; y++) sil[y * w + x] = 1;
+    }
+    /* 야자수: 오른쪽 끝, 살짝 기울어진 줄기 + 잎 */
+    const px0 = Math.round(w * 0.932);
+    const crownY = Math.max(2, horizon - Math.round(skyH * 0.62));
+    for (let y = crownY; y < horizon; y++) {
+      const tx = px0 + Math.round((y - crownY) * 0.12);
+      if (tx >= 0 && tx < w) sil[y * w + tx] = 1;
+      if (tx + 1 < w) sil[y * w + tx + 1] = 1;
+    }
+    for (let f = 0; f < 6; f++) {
+      const a = -Math.PI + ((f + 0.5) / 6) * Math.PI;
+      const len = skyH * (0.34 + 0.09 * ((f * 37) % 3));
+      for (let k = 0; k < len; k++) {
+        const fx = px0 + Math.cos(a) * k;
+        const fy = crownY + Math.sin(a) * k * 0.62 + k * k * 0.011;
+        const ix = Math.round(fx), iy = Math.round(fy);
+        if (ix >= 0 && ix < w && iy >= 0 && iy < horizon) {
+          sil[iy * w + ix] = 1;
+          if (k > len * 0.66 && ix + 1 < w) sil[iy * w + ix + 1] = 1;
+        }
       }
     }
   }
 
-  /* 구름 마스크: 행별 폭이 다른 도트 구름 */
+  /* 구름 마스크: 행별 폭이 다른 도트 구름 (구름은 흘러가므로 매 틱 갱신) */
   const cm = (SUNSET.cm && SUNSET.cm.length === w * h) ? SUNSET.cm : (SUNSET.cm = new Uint8Array(w * h));
   cm.fill(0);
   const wrap = w + 80;
@@ -2450,72 +2495,56 @@ function drawSunset(time, sunH) {
     }
   }
 
-  for (let y = 0; y < h; y++) {
+  /* 하늘: 행마다 바탕색이 같으므로 한 번만 계산하고, 태양 빛무리 반경 밖은 sqrt 없이 처리 */
+  const rCore = sunR * 1.02;
+  const rGlow = sunR * 4.4;
+  const rDisc = sunR;
+  const cCore = rCore * rCore, cGlow = rGlow * rGlow, cDisc = rDisc * rDisc;
+  const glowDiv = sunR * 3.4;
+  for (let y = 0; y < horizon; y++) {
     const rowBase = y * w;
-    if (y < horizon) skyRamp(1 - y / Math.max(1, horizon - 1), tmp);
+    skyRamp(1 - y / Math.max(1, horizon - 1), tmp);
+    const tr = tmp[0], tg = tmp[1], tb = tmp[2];
+    const dy = y - sunCY;
+    const dy2 = dy * dy;
     for (let x = 0; x < w; x++) {
       const idx = rowBase + x;
       const i4 = idx * 4;
       let r, g, b;
       const bay = BAYER4[((y & 3) << 2) | (x & 3)] / 16 - 0.5;
-      if (y < horizon) {
-        const dx = x - sunX, dy = y - sunCY;
-        const dd = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-        /* 바탕 하늘 + 태양 빛무리 */
-        if (dd < sunR * 1.02) {
-          r = tmp[0]; g = tmp[1]; b = tmp[2];
-        } else {
-          const gl = Math.max(0, 1 - (dd - sunR) / (sunR * 3.4));
-          const q = gl * gl;
-          r = tmp[0] + 118 * q;
-          g = tmp[1] + 60 * q;
-          b = tmp[2] + 14 * q;
-        }
-        if (sil[idx]) {
-          const rim = y > 0 && !sil[idx - w];
-          r = rim ? 104 : 34; g = rim ? 44 : 18; b = rim ? 84 : 48;
-        } else if (cm[idx]) {
-          const topRim = y > 0 && !cm[idx - w];
-          if (topRim) { r = 226; g = 142; b = 146; }
-          else { r = 92; g = 46; b = 100; }
-          const d2 = Math.abs(x - sunX);
-          if (d2 < sunR * 2.6) {
-            const k2 = 1 - d2 / (sunR * 2.6);
-            r += 84 * k2; g += 40 * k2; b += 6 * k2;
-          }
-        }
-        /* 태양은 구름·언덕보다 앞: 항상 또렷한 픽셀 원 */
-        if (dd < sunR) {
-          if (dd < sunR * 0.40) { r = 252; g = 238; b = 190; }
-          else if (dd < sunR * 0.72) { r = 250; g = 208; b = 130; }
-          else { r = 246; g = 174; b = 98; }
-        }
-      } else if (y < shore) {
-        const v = (y - horizon) / Math.max(1, shore - horizon);
-        r = 62 - 26 * v;
-        g = 34 - 10 * v;
-        b = 100 - 30 * v;
-        const dxs = Math.abs(x - sunX);
-        const band = Math.max(0, 1 - dxs / (w * 0.085));
-        const refl = band * band * (0.58 + 0.42 * Math.sin(y * 0.85 + t * 2.6));
-        if (refl > 0) {
-          const k2 = refl * (1 - v * 0.55);
-          r += 205 * k2; g += 122 * k2; b += 48 * k2;
-        }
-        const wv = Math.sin(x * 0.55 + y * 1.9 + t * 2.1) + Math.sin(y * 0.75 - x * 0.22 - t * 1.4);
-        if (wv > 1.42) {
-          const k3 = (wv - 1.42) * 1.5;
-          r += 110 * k3 + 18; g += 74 * k3 + 8; b += 34 * k3;
-        }
-        if ((y - horizon) % 3 === 1 && ((x + y * 3) % 9) < 3) { r += 22; g += 14; b += 8; }
+      const dx = x - sunX;
+      const dd2 = dx * dx + dy2;
+      /* 바탕 하늘 + 태양 빛무리 */
+      if (dd2 < cCore) {
+        r = tr; g = tg; b = tb;
       } else {
-        const v = (y - shore) / Math.max(1, h - shore);
-        r = 238 - 52 * v;
-        g = 190 - 50 * v;
-        b = 132 - 44 * v;
-        if (y - shore < 2) { r = 255; g = 232; b = 198; }
-        const grit = (((x * 13 + y * 7) ^ (x * y)) % 17) < 2 ? -26 : 0;
-        r += grit; g += grit; b += grit;
+        let q = 0;
+        if (dd2 < cGlow) {
+          const gl = 1 - (Math.sqrt(dd2) - sunR) / glowDiv;
+          if (gl > 0) q = gl * gl;
+        }
+        r = tr + 118 * q;
+        g = tg + 60 * q;
+        b = tb + 14 * q;
+      }
+      if (sil[idx]) {
+        const rim = y > 0 && !sil[idx - w];
+        r = rim ? 104 : 34; g = rim ? 44 : 18; b = rim ? 84 : 48;
+      } else if (cm[idx]) {
+        const topRim = y > 0 && !cm[idx - w];
+        if (topRim) { r = 226; g = 142; b = 146; }
+        else { r = 92; g = 46; b = 100; }
+        const d2 = Math.abs(x - sunX);
+        if (d2 < sunR * 2.6) {
+          const k2 = 1 - d2 / (sunR * 2.6);
+          r += 84 * k2; g += 40 * k2; b += 6 * k2;
+        }
+      }
+      /* 태양은 구름·언덕보다 앞: 항상 또렷한 픽셀 원 */
+      if (dd2 < cDisc) {
+        if (dd2 < cDisc * 0.16) { r = 252; g = 238; b = 190; }
+        else if (dd2 < cDisc * 0.5184) { r = 250; g = 208; b = 130; }
+        else { r = 246; g = 174; b = 98; }
       }
       r = Math.round((r + bay * 16) / 16) * 16;
       g = Math.round((g + bay * 16) / 16) * 16;
@@ -2526,6 +2555,48 @@ function drawSunset(time, sunH) {
       d[i4 + 3] = 255;
     }
   }
+
+  /* 바다: 노을 반사와 물결이 움직이는 띠 */
+  const bandDiv = w * 0.085;
+  const shoreSpan = Math.max(1, shore - horizon);
+  for (let y = horizon; y < shore; y++) {
+    const rowBase = y * w;
+    const v = (y - horizon) / shoreSpan;
+    for (let x = 0; x < w; x++) {
+      const idx = rowBase + x;
+      const i4 = idx * 4;
+      const bay = BAYER4[((y & 3) << 2) | (x & 3)] / 16 - 0.5;
+      let r = 62 - 26 * v;
+      let g = 34 - 10 * v;
+      let b = 100 - 30 * v;
+      const dxs = Math.abs(x - sunX);
+      const band = Math.max(0, 1 - dxs / bandDiv);
+      const refl = band * band * (0.58 + 0.42 * Math.sin(y * 0.85 + t * 2.6));
+      if (refl > 0) {
+        const k2 = refl * (1 - v * 0.55);
+        r += 205 * k2; g += 122 * k2; b += 48 * k2;
+      }
+      const wv = Math.sin(x * 0.55 + y * 1.9 + t * 2.1) + Math.sin(y * 0.75 - x * 0.22 - t * 1.4);
+      if (wv > 1.42) {
+        const k3 = (wv - 1.42) * 1.5;
+        r += 110 * k3 + 18; g += 74 * k3 + 8; b += 34 * k3;
+      }
+      if ((y - horizon) % 3 === 1 && ((x + y * 3) % 9) < 3) { r += 22; g += 14; b += 8; }
+      r = Math.round((r + bay * 16) / 16) * 16;
+      g = Math.round((g + bay * 16) / 16) * 16;
+      b = Math.round((b + bay * 16) / 16) * 16;
+      d[i4] = r < 0 ? 0 : r > 255 ? 255 : r;
+      d[i4 + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      d[i4 + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+      d[i4 + 3] = 255;
+    }
+  }
+
+  /* 모래·바닥 띠: 미리 그려 둔 픽셀을 그대로 복사 */
+  const bkey = w + 'x' + h + '@' + shore;
+  if (!SUNSET.base || SUNSET.baseKey !== bkey) buildSunsetBase(w, h, shore);
+  if (shore < h) d.set(SUNSET.base, shore * w * 4);
+
   ctx.putImageData(SUNSET.img, 0, 0);
   if (SUNSET.tex) SUNSET.tex.needsUpdate = true;
 }
@@ -2580,16 +2651,81 @@ function updatePixelRes() {
 
 function updateViewUniforms() {
   if (!SC.skyMat || !renderer) return;
-  const v = renderer.getDrawingBufferSize(new THREE.Vector2());
+  if (!SC._dbSize) SC._dbSize = new THREE.Vector2();
+  const v = renderer.getDrawingBufferSize(SC._dbSize);
   SC.skyMat.uniforms.uView.value.set(v.x, v.y);
+}
+
+/* 블룸 내부 해상도: 화면의 절반(=
+   UnrealBloomPass 자체 반감까지 거치면 1/4 해상도)으로 블러 패스 비용을 크게 낮춘다.
+   커널 간격을 같은 비율로 줄여 번지는 반경은 화면 기준으로 그대로 유지한다. */
+function applyBloomSize() {
+  if (!bloomPass) return;
+  const bw = Math.max(8, Math.round(window.innerWidth * BLOOM_SCALE));
+  const bh = Math.max(8, Math.round(window.innerHeight * BLOOM_SCALE));
+  bloomPass.setSize(bw, bh);
+  const m = bloomPass.separableBlurMaterials;
+  for (let i = 0; i < m.length; i++) {
+    const v = m[i].uniforms.invSize.value;
+    v.set(v.x * BLOOM_SCALE, v.y * BLOOM_SCALE);
+  }
+}
+
+function basePixelRatio() {
+  return Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2);
+}
+
+function applyPixelRatio(pr) {
+  if (!renderer || !composer) return;
+  QUAL.pr = pr;
+  renderer.setPixelRatio(pr);
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  composer.setPixelRatio(pr);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  applyBloomSize();
+  updateViewUniforms();
+  updatePixelRes();
+}
+
+/* 적응형 품질: 최근 프레임이 목표(24ms)보다 느리면 내부 해상도를 한 단계 내린다.
+   놀이 중에만, 몇 초 간격으로 최대 2단계까지 — 화면이 갑자기 흐려지지 않도록. */
+const QUAL_STEP_MS = 24;
+function qualTick(dt, active) {
+  if (!QUAL.auto || !active) { QUAL.acc = 0; QUAL.n = 0; QUAL.slow = 0; return; }
+  if (QUAL.cool > 0) { QUAL.cool -= dt; return; }
+  if (dt <= 0) return;
+  QUAL.acc += (dt > 0.25 ? 0.25 : dt);   /* 아주 긴 프레임은 상한을 두고 '느림'으로 계산 */
+  QUAL.n++;
+  if (QUAL.n < 24) return;
+  const avg = (QUAL.acc / QUAL.n) * 1000;
+  QUAL.avg = avg;
+  QUAL.acc = 0;
+  QUAL.n = 0;
+  if (avg > QUAL_STEP_MS) {
+    QUAL.slow++;
+  } else {
+    QUAL.slow = 0;
+    return;
+  }
+  if (QUAL.slow < 2 || QUAL.steps >= 2) return;
+  if (QUAL.pr <= 1.001) return;
+  const next = Math.max(1, Math.round((QUAL.pr - 0.5) * 100) / 100);
+  if (next >= QUAL.pr) return;
+  QUAL.steps++;
+  QUAL.slow = 0;
+  QUAL.cool = 3.5;
+  applyPixelRatio(next);
+  alignPads();
 }
 
 function initGraphics() {
   const canvas = $('#scene');
+  QUAL.base = basePixelRatio();
+  QUAL.pr = QUAL.base;
   renderer = new THREE.WebGLRenderer({
     canvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2));
+  renderer.setPixelRatio(QUAL.pr);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
@@ -2603,7 +2739,10 @@ function initGraphics() {
   frameCamera();
 
   bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.42, 0.5, 0.9
+    new THREE.Vector2(
+      Math.max(8, Math.round(window.innerWidth * BLOOM_SCALE)),
+      Math.max(8, Math.round(window.innerHeight * BLOOM_SCALE))
+    ), 0.42, 0.5, 0.9
   );
   composer = new EffectComposer(renderer);
   composer.setPixelRatio(renderer.getPixelRatio());
@@ -2611,6 +2750,7 @@ function initGraphics() {
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
+  applyBloomSize();   /* addPass가 패스 크기를 다시 잡으므로 마지막에 적용 */
 
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', () => setTimeout(onResize, 220));
@@ -2645,12 +2785,12 @@ function onResize() {
   const w = window.innerWidth, h = window.innerHeight;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2));
+  renderer.setPixelRatio(QUAL.pr);
   renderer.setSize(w, h, false);
-  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setPixelRatio(QUAL.pr);
   composer.setSize(w, h);
-  bloomPass.setSize(w, h);
   frameCamera();
+  applyBloomSize();
   updateViewUniforms();
   updatePixelRes();
   resizeSunset();
@@ -3154,14 +3294,15 @@ function buildFx() {
     vel: new Float32Array(MAX * 3),
     life: new Float32Array(MAX),
     max: new Float32Array(MAX),
-    cursor: 0, rings, ringCursor: 0,
+    cursor: 0, rings, ringCursor: 0, alive: 0,
   };
 }
 
 function emitBurst(x, y, z, color, count, power) {
   const fx = SC.fx;
   if (!fx) return;
-  const c = new THREE.Color(color);
+  const c = SC._burstCol || (SC._burstCol = new THREE.Color());
+  c.set(color);
   for (let i = 0; i < count; i++) {
     const idx = fx.cursor;
     fx.cursor = (fx.cursor + 1) % fx.MAX;
@@ -3184,6 +3325,7 @@ function emitBurst(x, y, z, color, count, power) {
     fx.col[idx * 3 + 1] = c.g;
     fx.col[idx * 3 + 2] = c.b;
   }
+  fx.alive = Math.min(fx.MAX, fx.alive + count);
   fx.geo.attributes.position.needsUpdate = true;
   fx.geo.attributes.color.needsUpdate = true;
 }
@@ -3206,7 +3348,20 @@ function emitRing(x, y, z, color, size) {
 function updateFx(dt) {
   const fx = SC.fx;
   if (!fx) return;
+  if (fx.alive <= 0) {
+    /* 살아 있는 입자가 없으면 720개를 훑지 않고 반지(링)만 확인 */
+    for (const r of fx.rings) {
+      if (r.life <= 0) continue;
+      r.life -= dt;
+      if (r.life <= 0) { r.mesh.visible = false; continue; }
+      const k = 1 - r.life / r.max;
+      r.mesh.scale.setScalar(r.grow * (0.35 + k * 1.4));
+      r.mat.opacity = 0.95 * (1 - k) * (1 - k);
+    }
+    return;
+  }
   let any = false;
+  let alive = 0;
   for (let i = 0; i < fx.MAX; i++) {
     if (fx.life[i] <= 0) continue;
     any = true;
@@ -3215,6 +3370,7 @@ function updateFx(dt) {
       fx.pos[i * 3 + 1] = -999;
       continue;
     }
+    alive++;
     fx.vel[i * 3 + 1] -= 11.5 * dt;
     fx.pos[i * 3] += fx.vel[i * 3] * dt;
     fx.pos[i * 3 + 1] += fx.vel[i * 3 + 1] * dt;
@@ -3226,6 +3382,7 @@ function updateFx(dt) {
     fx.col[i * 3 + 2] = fx.base[i * 3 + 2] * f;
   }
   if (any) {
+    fx.alive = alive;
     fx.geo.attributes.position.needsUpdate = true;
     fx.geo.attributes.color.needsUpdate = true;
   }
@@ -3250,6 +3407,9 @@ const COL_SPOT_BASE = new THREE.Color(0xd8b6ff), COL_SPOT_SUN = new THREE.Color(
 const COL_MOOD_BASE = new THREE.Color(0x9a6bff), COL_MOOD_SUN = new THREE.Color(0xff8a4a);
 const COL_MASCOT_BASE = new THREE.Color(0xd7bcff), COL_MASCOT_SUN = new THREE.Color(0xffb06a);
 const COL_EMIS_SUN = new THREE.Color(0xff6a2a);
+const COL_MASCOT_GOLD = new THREE.Color(0xffd9a0);
+const COL_MASCOT_BLUE = new THREE.Color(0xa8b6ff);
+const MASCOT_TINT = new THREE.Color();
 const MISS_W = 0.175;
 const FEVER_TIME = 9;
 
@@ -3261,6 +3421,7 @@ const G = {
   scroll: 1,
   offsetMs: 0,
   notes: [],
+  noteHead: 0,
   counts: [0, 0, 0, 0],
   judged: 0,
   accSum: 0,
@@ -3604,6 +3765,7 @@ function updateSyncVisual() {
   const track = SYNC.track;
   const noteEl = SYNC.noteEl;
   if (!track || !noteEl) return;
+  if (G.screen !== 'title') return;   /* 싱크 테스트는 타이틀 화면에만 보인다 */
   const ghostEl = SYNC.ghostEl;
 
   if (!SYNC.running || !AUDIO.ctx) {
@@ -3836,6 +3998,10 @@ async function startGame() {
   G.shake = 0;
   G.lastStepIdx = -1;
   G.pixelForce = null;
+  G.noteHead = 0;
+  NOTE_VIS.force = true;
+  QUAL.cool = 2.5;    /* 시작 직후 셰이더 컴파일 히치는 품질 판단에서 뺀다 */
+  QUAL.slow = 0;
   SUNSET.acc = 0;
   const appEl = $('#app');
   appEl.dataset.pixel = '0';
@@ -3984,7 +4150,7 @@ function pressLane(lane) {
   const t = gameTimeNow();
   if (t < -0.6) return;
   let best = null, bestD = 9;
-  for (let i = 0; i < G.notes.length; i++) {
+  for (let i = G.noteHead; i < G.notes.length; i++) {
     const n = G.notes[i];
     if (n.judged || n.lane !== lane) continue;
     const dt = n.t - t;
@@ -4060,7 +4226,7 @@ function triggerFever() {
 }
 
 function laneTapVisual(lane) {
-  const pads = $$('.pad');
+  const pads = padEls();
   const el = pads[lane];
   if (!el) return;
   /* 터치/키 모두 잠깐 밝게 */
@@ -4086,12 +4252,14 @@ let dashT = 0;
 
 function frame(ts) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, Math.max(0.0005, (ts - lastFrameT) / 1000)) || 0.016;
+  const raw = (ts - lastFrameT) / 1000;
+  const dt = Math.min(0.05, Math.max(0.0005, raw)) || 0.016;
   lastFrameT = ts;
   const wall = ts / 1000;
   fpsAcc += dt; fpsN++;
   update(dt, wall);
   composer.render();
+  qualTick(raw, G.screen === 'play' && !G.paused && !G.settings);
 }
 
 function update(dt, wall) {
@@ -4103,18 +4271,25 @@ function update(dt, wall) {
 
     /* 자동 판정 (테스트/관전) */
     if (G.auto) {
-      for (const n of G.notes) {
+      const autoNotes = G.notes;
+      for (let i = G.noteHead; i < autoNotes.length; i++) {
+        const n = autoNotes[i];
         if (n.judged) continue;
         if (n.t - G.time > 0.025) break;
         judgeNote(n, Math.min(MISS_W, Math.abs(n.t - G.time)));
       }
     }
 
-    /* 미스 판정 */
-    for (const n of G.notes) {
-      if (n.judged) continue;
-      if (n.t < G.time - MISS_W) missNote(n);
-      else if (n.t > G.time + 2) break;
+    /* 미스 판정 — 이미 판정된 앞쪽 노트는 건너뛴다 */
+    {
+      const allNotes = G.notes;
+      for (let i = G.noteHead; i < allNotes.length; i++) {
+        const n = allNotes[i];
+        if (n.judged) continue;
+        if (n.t < G.time - MISS_W) missNote(n);
+        else if (n.t > G.time + 2) break;
+      }
+      while (G.noteHead < allNotes.length && allNotes[G.noteHead].judged) G.noteHead++;
     }
 
     /* 피버 */
@@ -4191,55 +4366,80 @@ function updateFunGimmick(dt, song) {
 
 /* ---------------------------- HUD ---------------------------- */
 const hudCache = { score: -1, combo: -1, acc: -1, prog: -1, fever: -1, feverOn: null };
+const HUD_EL = {};
+function hud(id) {
+  let el = HUD_EL[id];
+  if (el === undefined) { el = document.getElementById(id); HUD_EL[id] = el; }
+  return el;
+}
+let comboPopFlip = 0;
 function updateHUD(dt) {
   G.shownScore = damp(G.shownScore, G.score, 12, dt);
   const s = Math.round(G.shownScore);
   if (s !== hudCache.score) {
-    $('#scoreVal').textContent = s.toLocaleString('en-US');
     hudCache.score = s;
+    const el = hud('scoreVal');
+    if (el) el.textContent = s.toLocaleString('en-US');
   }
   if (G.combo !== hudCache.combo) {
-    $('#comboVal').textContent = G.combo;
-    $('#comboBox').classList.toggle('on', G.combo >= 3);
-    const box = $('#comboBox');
-    box.classList.remove('pop');
-    void box.offsetWidth;
-    box.classList.add('pop');
     hudCache.combo = G.combo;
+    const cv = hud('comboVal');
+    if (cv) cv.textContent = G.combo;
+    const box = hud('comboBox');
+    if (box) {
+      box.classList.toggle('on', G.combo >= 3);
+      /* offsetWidth 읽기(강제 레이아웃) 없이 애니메이션만 재시작 */
+      comboPopFlip ^= 1;
+      box.classList.remove('pop', 'pop2');
+      box.classList.add(comboPopFlip ? 'pop' : 'pop2');
+    }
   }
   const acc = G.judged ? (G.accSum / G.judged) * 100 : 100;
   const accR = Math.round(acc * 100) / 100;
   if (accR !== hudCache.acc) {
-    $('#accVal').textContent = accR.toFixed(2) + '%';
     hudCache.acc = accR;
+    const el = hud('accVal');
+    if (el) el.textContent = accR.toFixed(2) + '%';
   }
   const dur = songDuration(SONGS[G.songIndex]);
   const prog = clamp(G.time / dur, 0, 1);
   const progR = Math.round(prog * 1000) / 10;
   if (progR !== hudCache.prog) {
-    $('#progressFill').style.width = (prog * 100).toFixed(1) + '%';
-    $('#progressNum').textContent = Math.round(prog * 100) + '%';
     hudCache.prog = progR;
+    const pf = hud('progressFill');
+    if (pf) pf.style.width = (prog * 100).toFixed(1) + '%';
+    const pn = hud('progressNum');
+    if (pn) pn.textContent = Math.round(prog * 100) + '%';
   }
   const fv = Math.round(G.energy);
   if (fv !== hudCache.fever) {
-    $('#feverFill').style.width = fv + '%';
-    $('#feverPct').textContent = fv + '%';
     hudCache.fever = fv;
+    const ff = hud('feverFill');
+    if (ff) ff.style.width = fv + '%';
+    const fp = hud('feverPct');
+    if (fp) fp.textContent = fv + '%';
   }
   if (G.fever !== hudCache.feverOn) {
     hudCache.feverOn = G.fever;
-    $('#feverWord').textContent = t(G.fever ? 'feverTime' : 'fever');
+    const fw = hud('feverWord');
+    if (fw) fw.textContent = t(G.fever ? 'feverTime' : 'fever');
   }
 }
 
 /* ---------------------------- visuals ---------------------------- */
+const NOTE_VIS = { useBox: false, force: true };
 function updateNotesVisual(t) {
   const counts = [0, 0, 0, 0];
   const approach = 1.72 / G.scroll;
   const speed = -SPAWN_Z / approach;
-  for (let i = 0; i < G.notes.length; i++) {
-    const n = G.notes[i];
+  const useBox = G.pixel > 0.42;
+  if (useBox !== NOTE_VIS.useBox) { NOTE_VIS.useBox = useBox; NOTE_VIS.force = true; }
+  const force = NOTE_VIS.force;
+  const drawCap = force || !useBox;
+  const drawBox = force || useBox;
+  const notes = G.notes;
+  for (let i = G.noteHead; i < notes.length; i++) {
+    const n = notes[i];
     if (n.judged) continue;
     const dz = n.t - t;
     if (dz > approach + 0.35) break;
@@ -4250,39 +4450,51 @@ function updateNotesVisual(t) {
     const z = HIT_Z - dz * speed;
     const fadeIn = clamp((approach + 0.35 - dz) * 6, 0, 1);
     const near = clamp(1 - Math.max(0, dz) / approach, 0, 1);
-    pool.dummy.position.set(LANE_X[lane], NOTE_Y, z);
     const sc = 0.72 + 0.28 * fadeIn;
-    pool.dummy.scale.set(sc, sc * (1 + near * 0.06), sc);
-    pool.dummy.rotation.set(0, 0, 0);
-    pool.dummy.updateMatrix();
-    pool.inst.setMatrixAt(counts[lane], pool.dummy.matrix);
-    pool.dummy.position.set(LANE_X[lane], NOTE_Y, z + 0.25);
-    pool.dummy.scale.set(sc * (1 + near * 0.3), sc * (1 + near * 0.2), 1);
-    pool.dummy.updateMatrix();
-    pool.halo.setMatrixAt(counts[lane], pool.dummy.matrix);
-
-    /* 8비트 블록 노트 */
-    pool.boxDummy.position.set(LANE_X[lane], NOTE_Y, z);
-    pool.boxDummy.rotation.set(0, 0, 0);
-    pool.boxDummy.scale.set(sc, sc, sc);
-    pool.boxDummy.updateMatrix();
-    pool.box.setMatrixAt(counts[lane], pool.boxDummy.matrix);
+    const k = counts[lane];
+    if (drawCap) {
+      pool.dummy.position.set(LANE_X[lane], NOTE_Y, z);
+      pool.dummy.scale.set(sc, sc * (1 + near * 0.06), sc);
+      pool.dummy.rotation.set(0, 0, 0);
+      pool.dummy.updateMatrix();
+      pool.inst.setMatrixAt(k, pool.dummy.matrix);
+      pool.dummy.position.set(LANE_X[lane], NOTE_Y, z + 0.25);
+      pool.dummy.scale.set(sc * (1 + near * 0.3), sc * (1 + near * 0.2), 1);
+      pool.dummy.updateMatrix();
+      pool.halo.setMatrixAt(k, pool.dummy.matrix);
+    }
+    if (drawBox) {
+      /* 8비트 블록 노트 */
+      pool.boxDummy.position.set(LANE_X[lane], NOTE_Y, z);
+      pool.boxDummy.rotation.set(0, 0, 0);
+      pool.boxDummy.scale.set(sc, sc, sc);
+      pool.boxDummy.updateMatrix();
+      pool.box.setMatrixAt(k, pool.boxDummy.matrix);
+    }
     counts[lane]++;
   }
+  NOTE_VIS.force = false;
   for (let l = 0; l < 4; l++) {
     const pool = SC.notePools[l];
-    pool.inst.count = counts[l];
-    pool.inst.instanceMatrix.needsUpdate = true;
-    pool.halo.count = counts[l];
-    pool.halo.instanceMatrix.needsUpdate = true;
-    pool.box.count = counts[l];
-    pool.box.instanceMatrix.needsUpdate = true;
+    const c = counts[l];
+    if (drawCap) {
+      pool.inst.count = c;
+      pool.halo.count = c;
+      if (c > 0) {
+        pool.inst.instanceMatrix.needsUpdate = true;
+        pool.halo.instanceMatrix.needsUpdate = true;
+      }
+    }
+    if (drawBox) {
+      pool.box.count = c;
+      if (c > 0) pool.box.instanceMatrix.needsUpdate = true;
+    }
   }
 }
 
 const SHAKE_CSS = { hx: 99, hy: 99, px: -1, mode: -1 };
 function applyShakeCss(fs, px, wall) {
-  const app = $('#app');
+  const app = hud('app');
   if (!app) return;
   const hx = Math.round(Math.sin(wall * 57.1) * 3.6 * fs * 100) / 100;
   const hy = Math.round(Math.cos(wall * 44.3) * 2.9 * fs * 100) / 100;
@@ -4299,7 +4511,7 @@ function applyShakeCss(fs, px, wall) {
   if (pxc !== SHAKE_CSS.px) {
     SHAKE_CSS.px = pxc;
     app.style.setProperty('--px', pxc.toFixed(2));
-    const veil = $('#pixelVeil');
+    const veil = hud('pixelVeil');
     if (veil) veil.style.opacity = (pxc * 0.55).toFixed(2);
   }
   const mode = px > 0.3 ? 1 : 0;
@@ -4320,15 +4532,21 @@ function updateStage(dt, wall, pulse, bp) {
   }
   if (SC.skyMat) SC.skyMat.uniforms.uPixel.value = px;
   if (PIXEL.pass) {
-    PIXEL.pass.uniforms.uMix.value = px;
-    PIXEL.pass.uniforms.uWarm.value = px * 0.85;
+    /* 도트 모드가 아니면 픽셀화 패스를 아예 건너뛴다 (일반 플레이 추가 비용 0) */
+    const pixelOn = px > 0.001;
+    if (PIXEL.pass.enabled !== pixelOn) PIXEL.pass.enabled = pixelOn;
+    if (pixelOn) {
+      PIXEL.pass.uniforms.uMix.value = px;
+      PIXEL.pass.uniforms.uWarm.value = px * 0.85;
+    }
   }
 
-  /* 도트 노을 캔버스 갱신 (초당 ~24회) */
+  /* 도트 노을 캔버스 갱신 (초당 ~16회, 남는 시간은 이월해 애니메이션 속도 유지) */
   if (px > 0.01) {
     SUNSET.acc += dt;
-    if (SUNSET.acc >= 1 / 24) {
-      SUNSET.acc = 0;
+    if (SUNSET.acc >= 1 / 16) {
+      SUNSET.acc -= 1 / 16;
+      if (SUNSET.acc > 0.25) SUNSET.acc = 0;
       const dur = songDuration(SONGS[G.songIndex]);
       const pr = clamp((G.screen === 'play' ? G.time : 0) / dur, 0, 1);
       const desc = clamp((pr - 0.55) / 0.42, 0, 1);
@@ -4452,6 +4670,9 @@ function updateStage(dt, wall, pulse, bp) {
   bloomPass.strength = damp(bloomPass.strength, targetBloom, 4, dt);
   bloomPass.threshold = lerp(0.9, 1.30, px);
   renderer.toneMappingExposure = lerp(1.08, 0.88, px);
+  /* 노을 모드에서는 블룸 세기가 사실상 0에 가깝다 → 블러 패스를 건너뛴다 */
+  const bloomOn = bloomPass.strength > 0.004 && !(px > 0.85 && bloomPass.strength < 0.08);
+  if (bloomPass.enabled !== bloomOn) bloomPass.enabled = bloomOn;
 }
 
 function updateMascot(dt, wall, pulse, bp) {
@@ -4490,14 +4711,11 @@ function updateMascot(dt, wall, pulse, bp) {
   if (M.blinkT <= 0) { M.blink = 1; M.blinkT = 2.6 + Math.random() * 2.6; }
   M.blink = Math.max(0, M.blink - dt * 9);
 
-  /* 감정 색 */
+  /* 감정 색 (매 프레임 새 객체를 만들지 않는다) */
   const feverMix = G.fever ? 1 : 0;
   const missMix = M.missT;
-  const base = COL_MASCOT_BASE;
-  const gold = new THREE.Color(0xffd9a0);
-  const blue = new THREE.Color(0xa8b6ff);
-  const c = base.clone().lerp(gold, feverMix * 0.85).lerp(blue, missMix * 0.5).lerp(COL_MASCOT_SUN, G.pixel * 0.75);
-  M.bodyMat.color.lerp(c, 1 - Math.exp(-6 * dt));
+  MASCOT_TINT.copy(COL_MASCOT_BASE).lerp(COL_MASCOT_GOLD, feverMix * 0.85).lerp(COL_MASCOT_BLUE, missMix * 0.5).lerp(COL_MASCOT_SUN, G.pixel * 0.75);
+  M.bodyMat.color.lerp(MASCOT_TINT, 1 - Math.exp(-6 * dt));
   M.bodyMat.emissiveIntensity = 0.32 + M.hitPulse * 0.5 + (G.fever ? 0.22 : 0) + pulse * 0.1;
   M.bodyMat.emissive.setHex(G.fever ? 0xc07a20 : 0x6d3fc0);
   if (G.pixel > 0.001) M.bodyMat.emissive.lerp(COL_EMIS_SUN, G.pixel * 0.8);
@@ -4896,6 +5114,8 @@ let KEY_CUR = KEY_DEF.slice();
 let KEY_LANE = {};
 let bindLane = -1;
 let keyNoteTimer = 0;
+let PAD_ELS = null;
+function padEls() { return PAD_ELS || (PAD_ELS = $$('.pad')); }
 
 function bindUI() {
   /* 곡/난이도/옵션 */
@@ -4985,9 +5205,9 @@ function bindUI() {
       ids.delete(e.pointerId);
       if (!ids.size) { pad._held = false; pad.classList.remove('on'); }
     };
-    pad.addEventListener('pointerup', release);
-    pad.addEventListener('pointercancel', release);
-    pad.addEventListener('lostpointercapture', release);
+    pad.addEventListener('pointerup', release, { passive: true });
+    pad.addEventListener('pointercancel', release, { passive: true });
+    pad.addEventListener('lostpointercapture', release, { passive: true });
     pad.addEventListener('contextmenu', (e) => e.preventDefault());
   });
 
@@ -5054,10 +5274,10 @@ function bindUI() {
     if (G.screen !== 'play') return;
     const lane = KEY_LANE[e.key.toLowerCase()];
     if (lane !== undefined) {
-      const pad = $$('.pad')[lane];
+      const pad = padEls()[lane];
       if (pad && !pad._held) pad.classList.remove('on');
     }
-  });
+  }, { passive: true });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -5157,6 +5377,21 @@ window.PICKLE = {
     },
   },
   fun: (v) => { selectFun(v); return G.fun; },
+  perf: {
+    auto: (v) => { QUAL.auto = !!v; return QUAL.auto; },
+    state: () => ({
+      dpr: +renderer.getPixelRatio().toFixed(2), base: +QUAL.base.toFixed(2),
+      avgMs: +QUAL.avg.toFixed(1), steps: QUAL.steps, auto: QUAL.auto,
+      qual: { n: QUAL.n, slow: QUAL.slow, cool: +QUAL.cool.toFixed(2), acc: +QUAL.acc.toFixed(3), pr: +QUAL.pr.toFixed(2) },
+      pixelPass: PIXEL.pass ? PIXEL.pass.enabled : null,
+      bloom: bloomPass ? bloomPass.enabled : null,
+      bloomSize: bloomPass ? [bloomPass.renderTargetsHorizontal[0].width, bloomPass.renderTargetsHorizontal[0].height] : null,
+      passes: composer ? composer.passes.filter((p) => p.enabled).length : 0,
+      draws: renderer.info.render.calls, tris: renderer.info.render.triangles,
+      programs: renderer.info.programs.length, textures: renderer.info.memory.textures,
+      geometries: renderer.info.memory.geometries,
+    }),
+  },
   setDiff: (d) => { selectDiff(d); return G.diff; },
   forcePixel: (v, sunH) => { G.pixelForce = v; G.sunForce = sunH == null ? null : sunH; return G.pixel; },
   snapshot: () => ({
